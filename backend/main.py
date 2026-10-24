@@ -14,7 +14,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
-import backend.options  # noqa: E402
+import backend.options as options # noqa: E402
 from .agent import agent_events, redo_step, run_agent  # noqa: E402
 from .models import ErrorEvent, Plans, Profile, SchoolOption, StepRedoRequest, StepRedoResult, TermOptions  # noqa: E402
 
