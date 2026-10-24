@@ -3,7 +3,7 @@
 // is "ready" only when nothing about it has to be guessed; otherwise it is "needs_confirmation" with
 // the reasons. Page text is data: nothing in it changes what these rules do.
 
-export const RULES_VERSION = "rules-2026-10-24.6";
+export const RULES_VERSION = "rules-2026-10-24.7";
 
 export type Category = "international" | "out_of_state" | "domestic" | "unknown";
 export type ItemType = "tuition" | "mandatory_fee" | "living_estimate" | "housing_estimate";
@@ -17,7 +17,7 @@ export type CostCandidate = Base & {
 export type LanguageCandidate = Base & { kind: "language"; test: "ielts" | "toefl_ibt" | "duolingo"; score: number; mayVary: boolean };
 export type GradeCandidate = Base & { kind: "grade_policy"; qualification: string; threshold: string; scale: string | null; foundationMentioned: boolean };
 export type MilestoneCandidate = Base & {
-  kind: "milestone"; dateText: string; dateStart: string | null; cutoffTime: string | null; timezone: string | null; round: string | null; cue: string; scholarship: boolean;
+  kind: "milestone"; dateText: string; dateStart: string | null; cutoffTime: string | null; timezone: string | null; round: string | null; cue: string; scholarship: boolean; entryYear: number | null;
 };
 export type Candidate = CostCandidate | LanguageCandidate | GradeCandidate | MilestoneCandidate;
 
@@ -296,12 +296,15 @@ function milestones(lines: string[], asOf: string | null): MilestoneCandidate[] 
         if (POSTGRAD.test(s) || POSTGRAD.test(nearby)) reasons.push("applies to postgraduate study");
         if (/medicine|dentistry|veterinary|oxford|cambridge|nursing|midwifery|architecture/i.test(s)) reasons.push("applies only to some courses");
         if (/transfer|graduate admission/i.test(s)) reasons.push("applies to transfer or graduate applicants");
+        const entry = s.match(/\b(?:starting in\s+|start(?:ing)?\s+(?:in\s+)?(?:september|autumn|fall)\s+)(20\d\d)\b|\b(20\d\d) entry\b/i);
+        const entryYear = entry ? Number(entry[1] ?? entry[2]) : null;
+        if (entryYear && year && Number(year) > entryYear) reasons.push(`the page says this is for ${entryYear} entry, but the date is later than that entry year (contradictory or outdated page)`);
         const round = s.match(/\b(restrictive early action|early action|early decision (?:I{1,2}|1|2)?|regular decision|equal consideration)\b/i)?.[0] ?? null;
         const time = s.match(/\b\d{1,2}(?::\d{2})?\s?(?:a\.m\.|p\.m\.|am\b|pm\b)|\b\d{1,2}:\d{2}\b/i)?.[0] ?? null;
         const tz = s.match(/\b(ET|EST|EDT|CT|CST|PT|PST|GMT|BST|UK time|Eastern Time|Central Time|Pacific Time)\b/)?.[0] ?? null;
         out.push({
           kind: "milestone", dateText: m[0], dateStart: iso,
-          cutoffTime: time, timezone: tz, round, cue: cue[0], scholarship: /scholarship|award|bursary|grant/i.test(s), evidence: s, line: i,
+          cutoffTime: time, timezone: tz, round, cue: cue[0], scholarship: /scholarship|award|bursary|grant/i.test(s), entryYear, evidence: s, line: i,
           status: reasons.length ? "needs_confirmation" : "ready", reasons,
         });
       }

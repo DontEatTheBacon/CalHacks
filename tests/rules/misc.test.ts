@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classifySetting, classifyClimate, climateFit, deadlineRisk, daysAvailable, backPlan, nextCounselor, isAllowedUrl } from "../../convex/lib/rules/index.ts";
+import { classifySetting, classifyClimate, climateFit, deadlineRisk, daysAvailable, backPlan, nextCounselor, isAllowedUrl, ianaZone } from "../../convex/lib/rules/index.ts";
 
 test("setting classification by population with an unclassified band", () => {
   const e = (population: number | null, distanceKm: number | null = 3) => ({ campusId: "x", settlement: "Town", population, distanceKm });
@@ -74,4 +74,14 @@ test("domain allowlist", () => {
   assert.ok(!isAllowedUrl("https://user:pw@wisc.edu/"));
   assert.ok(!isAllowedUrl("ftp://wisc.edu/"));
   assert.ok(!isAllowedUrl("http://10.0.0.1/"));
+});
+
+test("published timezone wording maps to IANA names; unknown wording stays unknown and never crashes", () => {
+  assert.equal(ianaZone("UK time"), "Europe/London");
+  assert.equal(ianaZone("ET"), "America/New_York");
+  assert.equal(ianaZone("America/Chicago"), "America/Chicago");
+  assert.equal(ianaZone("Mars/Olympus"), null);
+  assert.equal(ianaZone("midnight-ish"), null);
+  assert.equal(ianaZone(null), null);
+  assert.equal(deadlineRisk({ date: "2027-01-13", timezone: ianaZone("UK time") }, 0, new Date("2026-10-24T12:00:00Z")), "on_track");
 });

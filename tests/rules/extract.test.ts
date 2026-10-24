@@ -118,3 +118,12 @@ test("course extras are not living costs; large amounts labelled only 'fee' need
   const cs = costs(extract(["Fees for overseas students", "You will need to budget at least £100 for the cost of photocopying, printing and binding each year.", "Fees", "£49,300 per year"].join("\n")));
   assert.ok(cs.every((c) => c.status === "needs_confirmation"), JSON.stringify(cs.map((c) => [c.amount, c.reasons])));
 });
+
+test("a deadline later than the entry year the page names is flagged as contradictory", () => {
+  const [bad, good] = extract([
+    "For courses starting in 2026 (and deferred applications), the deadline is 13 January 2027 18:00 (UK time).",
+    "The deadline for 2027 entry applications is 13 January 2027.",
+  ].join("\n"), "2026-10-24").filter((c) => c.kind === "milestone");
+  assert.equal(bad!.status, "needs_confirmation");
+  assert.equal(good!.status, "ready");
+});

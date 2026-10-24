@@ -195,3 +195,14 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Remaining gap: US tuition. US pages give in-state/out-of-state rates without saying international students pay the out-of-state rate, so it stays "needs confirmation" by design.
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — Saved programs, plans, dashboard and workspace (Claude Code)
+- Stage: code generation and browser test.
+- `convex/lib/plan.ts` builds a personal plan from verified facts only: the main official deadline (earliest upcoming standard round; scholarship, reply and past dates skipped), the English test chain back-planned from it with the config lead times (book → test or retake → results → send scores; every recommended date labeled as a planning assumption, and that no separate score deadline is published), a grade-confirmation task, and "find the deadline" when none is verified. Steps without a source (e.g. recommendations) are not added.
+- `convex/applications.ts`: save (idempotent; queues an `application_research` job for the agent worker), remove, list with aggregated next actions and deadline risk (engineering-detail 7.4), forward-only task status with explicit student correction, student-entered dates, overdue computed from official dates only. Owner and assigned counselor can read; others cannot.
+- Screens: "Save program" on results and program pages; dashboard "Next steps" and "Saved programs" with risk; workspace `/applications/[id]` with the timeline (official dates solid, recommended dashed, "recommended date has passed" flag), statuses, own dates, assumptions and the program's official dates with sources. Task titles render in Indonesian or English from the plan step.
+- Bugs found in the browser test and fixed: published timezone wording ("UK time") crashed the risk calculation (now mapped to IANA names; unknown wording uses the conservative earliest timezone); task titles and an error message appeared in English on Indonesian pages.
+- Data finding: Lancaster's page says "For courses starting in 2026 … the deadline is 13 January 2027", which contradicts itself. Dates later than the entry year a sentence names are now flagged, so Lancaster programs show "deadline not verified" instead of a doubtful date.
+- Verified: 60 rule tests, 48 Convex tests; headless Chrome 10/10 (save from results, dashboard next steps in Indonesian, Manchester's verified 13 Jan 2027 UCAS deadline with "tight" risk, Lancaster without a verified deadline, workspace statuses and forward-only refusal).
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):

@@ -337,6 +337,8 @@ export default defineSchema({
     userId: v.id("users"),
     applicationId: v.id("studentApplications"),
     milestoneId: v.optional(v.id("milestones")),
+    planKey: v.optional(v.string()), // rule step that created it, e.g. "english_book"
+    params: v.optional(v.any()), // values for the localized title (test name, institution, …)
     title: v.string(),
     owner: v.union(
       v.literal("student"), v.literal("school"), v.literal("recommender"),

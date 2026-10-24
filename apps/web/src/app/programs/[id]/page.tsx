@@ -7,6 +7,8 @@ import { useParams } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { money } from "@/components/Bands";
+import { SaveButton } from "@/components/SaveButton";
+import { appStrings } from "@/lib/appStrings";
 import { discoverStrings, type DiscoverStrings } from "@/lib/discoverStrings";
 import { useLocale } from "@/lib/useLocale";
 
@@ -45,7 +47,10 @@ export default function ProgramPage() {
       <header>
         <h1 className="text-2xl font-semibold">{p.name}</h1>
         <p className="text-stone-600">{p.institution.name} · {p.degree}{p.joint ? ` · ${s.joint}` : ""}</p>
-        {p.officialUrl && <a href={p.officialUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-800 underline">{s.official} ↗</a>}
+        <div className="mt-2 flex flex-wrap items-center gap-4">
+          <SaveButton programId={p.id} s={appStrings(locale)} goToPlan />
+          {p.officialUrl && <a href={p.officialUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-800 underline">{s.official} ↗</a>}
+        </div>
         {p.programSource && <Source f={p.programSource} s={s} locale={locale} />}
       </header>
 

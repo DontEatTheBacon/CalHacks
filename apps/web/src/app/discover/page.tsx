@@ -5,12 +5,15 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import { BandChips, money } from "@/components/Bands";
+import { SaveButton } from "@/components/SaveButton";
+import { appStrings } from "@/lib/appStrings";
 import { discoverStrings } from "@/lib/discoverStrings";
 import { useLocale } from "@/lib/useLocale";
 
 export default function DiscoverPage() {
   const [locale, setLocale] = useLocale();
   const s = discoverStrings(locale);
+  const a = appStrings(locale);
   const data = useQuery(api.discovery.forMe);
 
   return (
@@ -74,7 +77,8 @@ export default function DiscoverPage() {
                       <p className="text-stone-600">{s.missing} {r.cost.missing.map((m) => s.missingItems[m] ?? m).join(", ")}</p>
                     ) : null}
                   </div>
-                  <div className="mt-2 flex gap-4 text-sm">
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
+                    <SaveButton programId={r.id} s={a} />
                     <Link href={`/programs/${r.id}`} className="text-emerald-800 underline">{s.details}</Link>
                     {r.officialUrl && <a href={r.officialUrl} target="_blank" rel="noopener noreferrer" className="underline">{s.official} ↗</a>}
                   </div>

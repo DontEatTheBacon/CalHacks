@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { DashboardApplications } from "@/components/Applications";
 import { SharedFiles, StudentFiles } from "@/components/Files";
 import { Thread } from "@/components/Thread";
 import { t, type Strings } from "@/lib/strings";
@@ -61,6 +62,7 @@ function StudentHome({ s }: { s: Strings }) {
           <Link href="/intake" className="text-emerald-800 underline">{s.editProfile}</Link>
         </div>
       </section>
+      <DashboardApplications />
       <section className="rounded border border-stone-200 bg-white p-4">
         <h2 className="mb-2 font-semibold">{s.counseling}</h2>
         {status?.status === "assigned" && status.counselorName && <p className="text-sm">{s.counselingAssigned(status.counselorName)}</p>}

@@ -41,3 +41,30 @@ export function backPlan(officialDate: string, stepsLatestFirst: { key: string; 
     return { key: s.key, recommendedBy: new Date(cursor * 86_400_000).toISOString().slice(0, 10) };
   });
 }
+
+const ZONES: [RegExp, string][] = [
+  [/^(uk time|gmt|bst|london|uk)$/i, "Europe/London"],
+  [/^(et|est|edt|eastern( time)?)$/i, "America/New_York"],
+  [/^(ct|cst|cdt|central( time)?)$/i, "America/Chicago"],
+  [/^(mt|mst|mdt|mountain( time)?)$/i, "America/Denver"],
+  [/^(pt|pst|pdt|pacific( time)?)$/i, "America/Los_Angeles"],
+];
+
+/**
+ * Published timezone wording ("UK time", "ET") → IANA name for date arithmetic. Unknown wording
+ * returns null, which risk arithmetic treats as the earliest timezone (never calls a closed deadline open).
+ * The published wording itself is what the UI shows.
+ */
+export function ianaZone(published: string | null | undefined): string | null {
+  if (!published) return null;
+  const p = published.trim();
+  if (/^[A-Za-z]+\/[A-Za-z_]+$/.test(p)) {
+    try {
+      new Intl.DateTimeFormat("en", { timeZone: p });
+      return p;
+    } catch {
+      return null;
+    }
+  }
+  return ZONES.find(([re]) => re.test(p))?.[1] ?? null;
+}
