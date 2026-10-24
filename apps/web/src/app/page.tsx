@@ -56,7 +56,10 @@ function StudentHome({ s }: { s: Strings }) {
     <>
       <section className="flex items-center justify-between rounded border border-stone-200 bg-white p-4">
         <h2 className="font-semibold">{s.profile}</h2>
-        <Link href="/intake" className="text-sm text-emerald-800 underline">{s.editProfile}</Link>
+        <div className="flex gap-4 text-sm">
+          <Link href="/discover" className="font-medium text-emerald-800 underline">{s.seePrograms}</Link>
+          <Link href="/intake" className="text-emerald-800 underline">{s.editProfile}</Link>
+        </div>
       </section>
       <section className="rounded border border-stone-200 bg-white p-4">
         <h2 className="mb-2 font-semibold">{s.counseling}</h2>

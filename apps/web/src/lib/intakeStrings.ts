@@ -5,7 +5,7 @@ const id = {
   subtitle: "Mulai dari yang penting. Semua jawaban bisa diubah nanti, dan \"belum tahu\" selalu boleh.",
   steps: ["Preferensi studi", "Nilai sekolah", "Bahasa Inggris", "Tinjau"],
   stepOf: (n: number, total: number) => `Langkah ${n} dari ${total}`,
-  next: "Simpan dan lanjut", back: "Kembali", finish: "Selesai dan lihat dashboard", saving: "Menyimpan…", saved: "Tersimpan",
+  next: "Simpan dan lanjut", back: "Kembali", finish: "Selesai dan lihat program", saving: "Menyimpan…", saved: "Tersimpan",
   // Step 1
   majors: "Jurusan yang diminati", majorsHint: "Pilih satu atau lebih. Jurusan lain tetap ditampilkan, hanya diurutkan lebih rendah.",
   relatedOk: "Saya juga terbuka untuk bidang terkait",
@@ -44,7 +44,7 @@ const en: typeof id = {
   subtitle: "Start with what matters. You can change any answer later, and \"don't know yet\" is always fine.",
   steps: ["Study preferences", "School results", "English tests", "Review"],
   stepOf: (n, total) => `Step ${n} of ${total}`,
-  next: "Save and continue", back: "Back", finish: "Finish and go to dashboard", saving: "Saving…", saved: "Saved",
+  next: "Save and continue", back: "Back", finish: "Finish and see programs", saving: "Saving…", saved: "Saved",
   majors: "Intended majors", majorsHint: "Pick one or more. Other majors still appear, just ranked lower.",
   relatedOk: "I'm also open to related fields",
   countries: "Destination countries", countriesHint: "Choose at least one to see programs.",

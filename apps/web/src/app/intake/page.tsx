@@ -437,7 +437,7 @@ function ReviewStep({ s, locale, data, goTo }: { s: IntakeStrings; locale: Local
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       <div className="flex gap-3">
         <button onClick={() => goTo(2)} className="rounded border border-stone-300 px-4 py-2 text-sm">{s.back}</button>
-        <button disabled={busy} onClick={() => run(() => complete({}), () => router.push("/"))}
+        <button disabled={busy} onClick={() => run(() => complete({}), () => router.push("/discover"))}
           className="rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
           {busy ? s.saving : s.finish}
         </button>

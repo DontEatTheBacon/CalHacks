@@ -263,7 +263,7 @@ export const unpublishAll = internalMutation({
 import { internalQuery, query, type QueryCtx } from "./_generated/server";
 import { requireUser } from "./lib/access";
 
-async function assemble(ctx: QueryCtx, p: Doc<"programs">) {
+export async function assemble(ctx: QueryCtx, p: Doc<"programs">) {
   const inst = (await ctx.db.get(p.institutionId))!;
   const campus = p.campusId ? await ctx.db.get(p.campusId) : null;
   const wide = <R extends { scope?: "institution" | "program" }>(rows: R[]) => rows.filter((r) => r.scope === "institution");
@@ -345,5 +345,46 @@ export const refresh = internalAction({
     const programs = await ctx.runMutation(internal.catalog.identifyPrograms, {});
     const facts = await ctx.runMutation(internal.catalog.publishFacts, {});
     return { programs, facts };
+  },
+});
+
+// ---------------------------------------------------------------------------------------------
+// Campus environment: setting from GeoNames population, climate from Open-Meteo (spec DISC-002, 5.3.1)
+
+import { classifyClimate } from "./lib/rules/climate.ts";
+import { classifySetting } from "./lib/rules/setting.ts";
+
+export const setCampusEnvironment = internalMutation({
+  args: {
+    slug: v.string(),
+    settlement: v.object({ name: v.string(), geonameId: v.number(), population: v.number(), lat: v.number(), lng: v.number(), dataset: v.string() }),
+    climate: v.optional(v.object({ annualMeanC: v.number(), coldestMonthMeanC: v.number(), period: v.string(), source: v.string() })),
+  },
+  handler: async (ctx, { slug, settlement, climate }) => {
+    const inst = await ctx.db.query("institutions").withIndex("by_slug", (q) => q.eq("slug", slug)).unique();
+    if (!inst) throw new Error(`Unknown institution ${slug}`);
+    const campus = (await ctx.db.query("campuses").withIndex("by_institution", (q) => q.eq("institutionId", inst._id)).collect())[0];
+    if (!campus) throw new Error(`No campus for ${slug}`);
+    // The configured campus town is the settlement itself, so its distance is 0 km.
+    const setting = classifySetting({ campusId: campus._id, settlement: settlement.name, population: settlement.population, distanceKm: 0 });
+    const climateClass = climate ? classifyClimate({ annualMeanC: climate.annualMeanC, coldestMonthMeanC: climate.coldestMonthMeanC }) : null;
+    await ctx.db.patch(campus._id, {
+      lat: settlement.lat, lng: settlement.lng, settingClass: setting.setting,
+      settingEvidence: { ...settlement, reason: setting.reason, configVersion: setting.configVersion, climate: climate ? { ...climate, class: climateClass } : null },
+    });
+    return { slug, setting: setting.setting, reason: setting.reason, climate: climateClass };
+  },
+});
+
+/** One program with its facts and sources; any signed-in user. */
+export const getProgram = query({
+  args: { id: v.id("programs") },
+  handler: async (ctx, { id }) => {
+    await requireUser(ctx);
+    const p = await ctx.db.get(id);
+    if (!p) return null;
+    const view = await assemble(ctx, p);
+    const campus = p.campusId ? await ctx.db.get(p.campusId) : null;
+    return { ...view, campusEvidence: campus?.settingEvidence ?? null };
   },
 });

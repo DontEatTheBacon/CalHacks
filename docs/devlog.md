@@ -176,3 +176,13 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Rework found in review, each fixed with a test: Bath listing pages repeated English requirements hundreds of times (now de-duplicated); Lancaster's vertical fee table gave the Home fee the "International" label (positional matching added); duplicate programs from catalog and department pages; "CS Major" marked joint; a fee row for an uncatalogued course became institution-wide tuition; a `go.wisc.edu` short link redirected to US News through Web Unlocker and was stored as official (Actor now checks the page's declared canonical address; source rejected).
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — Ranking and discovery on real data (Claude Code)
+- Stage: code generation and browser test.
+- Exchange rates: `convex/fx.ts` fetches Frankfurter (ECB reference rates) daily; first rates dated 2026-10-23. Conversions show the rate date and source; missing rate → "conversion unavailable".
+- Campus setting and climate: `scripts/enrich-campuses.mjs` uses GeoNames cities1000 (CC BY 4.0) for the configured campus town's population and coordinates, and Open-Meteo historical weather 2015–2024 (CC BY 4.0) for annual and coldest-month mean temperature; Convex classifies with the config thresholds. Result: 6 city, 5 countryside, Loughborough unclassified (64,884, between thresholds); 6 mild, 4 cool, 2 cold. Assumption recorded: the configured campus town stands in for geocoding the campus address.
+- `discovery:forMe` applies the country and setting hard filters and the lexicographic ranking from `config/ranking.json` to the 28 catalog programs, with the student's budget converted from IDR. Grades are "needs confirmation" for every program because no validated Indonesian grade rule exists yet.
+- Screens: `/discover` (ranked list with the four band chips, converted costs, missing cost parts, rate date/source, unclassified count) and `/programs/[id]` (campus evidence, every fact with its excerpt, source, retrieval date and fetch method, explicit unknowns). The intake now ends on `/discover`.
+- Verified: headless Chrome on the dev deployment 11/11 (fictional Nadia: CS programs first, economics listed as "other major", MSU "slightly over budget" from its full published international costs, Lancaster "within budget (costs incomplete)", countryside filter shows 7 programs and "4 hidden"); 3 new Convex tests (44 total), 52 rule tests.
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):
