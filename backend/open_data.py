@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import httpx
 
-import tool_models as tm
+import backend.tool_models as tm
 
 FRANKFURTER_URL = "https://api.frankfurter.dev/v1/latest"
 HIPOLABS_URL = "http://universities.hipolabs.com/search"

@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, computed_field, model_validator
 from sqlmodel import SQLModel
 
-from tool_models import ResourceLink
+from .tool_models import ResourceLink
 
 # basically just the user input, make dynamic? and have a bunch of nullable fields
 class Profile(SQLModel):
