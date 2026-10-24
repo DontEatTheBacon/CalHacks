@@ -16,9 +16,9 @@ from pydantic import ValidationError
 
 from sqlmodel import SQLModel
 
-import backend.scorecard as scorecard
-import backend.tool_models as tm
-from backend.models import Plan, Plans, PlansEvent, ToolCallEvent, ToolResultEvent
+import scorecard
+import tool_models as tm
+from models import Plan, Plans, PlansEvent, ToolCallEvent, ToolResultEvent
 
 log = logging.getLogger(__name__)
 
