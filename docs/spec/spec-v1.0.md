@@ -390,7 +390,7 @@ These categories define what to research and display. They are not statements of
 | --- | --- |
 | Frontend | Next.js (App Router), TypeScript, Tailwind; Indonesian and English strings from the start |
 | Backend and database | Convex: queries, mutations, actions, scheduled functions, HTTP actions |
-| Authentication | Clerk with a `role` field (student, counselor). Convex Auth is beta. |
+| Authentication | Convex Auth (password sign-in) with a `role` field (student, counselor). Changed from Clerk on 2026-10-24: the user could not create a Clerk account; Convex Auth is beta, accepted for the prototype. |
 | Files | Convex storage, private, served through an authenticated HTTP action |
 | Source discovery | Bright Data SERP API |
 | Collection | Custom Apify Actor, which calls Bright Data Web Unlocker when plain fetches fail |

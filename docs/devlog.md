@@ -97,3 +97,9 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
 - How the output reached the project: commits on the `langkah` branch.
+
+### 2026-10-24 — Auth change and interview record (Claude Code)
+- The user created the Convex project. The user could not create a Clerk account, so authentication moves to Convex Auth (beta; acceptable for a prototype; one less account; more of the product on Convex). Spec section 6.1 updated.
+- The user reported interviewing about 20 Indonesian transfer students at UC Berkeley about what would make finding universities abroad easier. Recorded in `docs/research/interviews.md`; details (when, how, what they said, what changed) still to be supplied.
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):
