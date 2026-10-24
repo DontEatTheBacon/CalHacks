@@ -1,0 +1,6 @@
+{
+  "version": "2026-10-24.1",
+  "note": "Suffix match; subdomains allowed. Government domains are fetched only for immigration and application-route milestones.",
+  "US": ["psu.edu", "msu.edu", "wisc.edu", "illinois.edu", "northeastern.edu", "dartmouth.edu", "commonapp.org", "studyinthestates.dhs.gov", "travel.state.gov"],
+  "GB": ["exeter.ac.uk", "sheffield.ac.uk", "lancaster.ac.uk", "manchester.ac.uk", "bath.ac.uk", "lboro.ac.uk", "ucas.com", "gov.uk"]
+}

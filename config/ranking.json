@@ -1,0 +1,12 @@
+{
+  "version": "2026-10-24.1",
+  "keys": ["major", "academic", "budget", "climate"],
+  "outcomes": {
+    "major": ["direct", "related", "other", "unknown"],
+    "academic": ["meets", "needs_confirmation", "subject_gap", "below"],
+    "budget": ["within", "within_incomplete", "unknown", "slightly_over", "over"],
+    "climate": ["match", "partial", "unknown", "mismatch"]
+  },
+  "slightlyOverPct": 15,
+  "tieBreak": ["lowest_known_annual_cost", "name"]
+}

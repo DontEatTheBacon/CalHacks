@@ -1,0 +1,8 @@
+{
+  "version": "2026-10-24.1",
+  "cityMinPopulation": 100000,
+  "countrysideMaxPopulation": 50000,
+  "settlementSearchRadiusKm": 15,
+  "betweenThresholds": "unclassified",
+  "overrides": []
+}

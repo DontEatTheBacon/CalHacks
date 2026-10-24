@@ -1,0 +1,15 @@
+{
+  "version": "2026-10-24.1",
+  "note": "Planning assumptions, not official facts. Shown to students labeled 'planning assumption' and editable. They move recommended targets only, never official dates.",
+  "leadDays": {
+    "englishTestBooking": 42,
+    "englishResults": 14,
+    "englishRetakeBuffer": 28,
+    "officialScoreDelivery": 14,
+    "schoolDocRequest": 30,
+    "translationCertification": 21,
+    "recommendationRequest": 45
+  },
+  "safetyBufferDays": 7,
+  "risk": { "onTrackFactor": 1.25 }
+}

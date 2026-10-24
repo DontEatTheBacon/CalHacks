@@ -1,0 +1,12 @@
+{
+  "version": "2026-10-24.1",
+  "upload": {
+    "maxBytes": 10485760,
+    "maxFiles": 50,
+    "maxTotalBytes": 104857600,
+    "allowed": ["pdf", "doc", "docx", "jpg", "jpeg", "png", "heic", "heif"]
+  },
+  "ai": { "callsPerStudentPerDay": 60, "tokensPerStudentPerDay": 200000 },
+  "ingestion": { "maxPagesPerRun": 150, "maxDepth": 2, "batchInstitutions": 3 },
+  "agent": { "jobTimeoutSec": 300, "fetchPerJob": 10 }
+}

@@ -1,6 +1,23 @@
+# secrets
 .env
+.env.*
+!.env.example
+**/API_SETUP.md
+*.pem
+
+# deps and builds
+node_modules/
 .venv/
 __pycache__/
-node_modules/
 dist/
-backend/.cache/
+.next/
+.vercel/
+coverage/
+legacy/backend/.cache/
+
+# tool state
+.convex/
+storage/
+apify_storage/
+.forge/
+.DS_Store

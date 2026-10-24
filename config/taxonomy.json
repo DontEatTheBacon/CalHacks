@@ -1,0 +1,13 @@
+{
+  "version": "2026-10-24.1",
+  "fields": {
+    "cs": { "label": { "en": "Computer Science", "id": "Ilmu Komputer" }, "related": ["software_eng", "data_science", "info_systems", "math_stats"] },
+    "econ": { "label": { "en": "Economics", "id": "Ilmu Ekonomi" }, "related": ["finance", "business", "math_stats"] },
+    "software_eng": { "label": { "en": "Software Engineering", "id": "Rekayasa Perangkat Lunak" }, "related": ["cs"] },
+    "data_science": { "label": { "en": "Data Science", "id": "Sains Data" }, "related": ["cs", "math_stats"] },
+    "info_systems": { "label": { "en": "Information Systems", "id": "Sistem Informasi" }, "related": ["cs", "business"] },
+    "finance": { "label": { "en": "Finance", "id": "Keuangan" }, "related": ["econ", "business"] },
+    "business": { "label": { "en": "Business", "id": "Bisnis" }, "related": ["econ", "finance", "info_systems"] },
+    "math_stats": { "label": { "en": "Mathematics and Statistics", "id": "Matematika dan Statistika" }, "related": ["cs", "econ", "data_science"] }
+  }
+}

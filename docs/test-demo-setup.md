@@ -1,0 +1,104 @@
+# Langkah — Test Strategy, Demo Data, and Setup Guide
+
+Date: October 24, 2026
+Status: Architect's plan for a prototype. Nothing here has been run. Where a vendor interface may have changed, check the linked official docs during setup.
+
+## 1. Test strategy
+
+### 1.1 Layers
+
+| Layer | What | Data |
+| --- | --- | --- |
+| Rule tests (unit) | Ranking, cost bands, climate classes, setting classes, grade comparison outcomes, deadline risk, round robin | Small fixtures, clearly labeled `fixture`, never shown in the app |
+| Contract tests | Bitdeer schema validation, validator rejection of bad excerpts, webhook signature and replay, Forge payload signing | Recorded sample payloads |
+| Access tests | Student A vs B, unassigned counselor, shared vs unshared file, copied file URL | Test users |
+| Live integration checks | Bright Data, Apify, Bitdeer, Factory, Forge, Cartesia against real services | Real public pages from the verified batch, fictional student |
+| End-to-end | The demo storyline in a real browser | Live data plus the fictional student |
+
+Fixtures are for tests only. The demo and the live checks use real retrieval; cached results are labeled.
+
+### 1.2 Fault-injection list (each must leave student data intact and show an actionable message)
+
+Bright Data key missing; Web Unlocker policy block; robots block; 403/502; timeout; empty result. Apify run failed, run exceeds 5 minutes, duplicate webhook, webhook with wrong secret. Bitdeer 429, balance error, invalid JSON, hallucinated excerpt. Claude cap reached, ungrounded answer. Factory job timeout, tool error, disallowed URL requested. Forge signature invalid, replayed event, Forge unreachable (polling recovers). Cartesia token expired, mic denied, unclear speech, `ink-whisper` failure (fallback). Convex action killed mid-run (job retries once). Upload with wrong signature, oversized, `.docm`, HEIC conversion failure.
+
+### 1.3 Acceptance
+
+The 25 scenarios in `spec-v1.0.md` section 13 are the acceptance suite. Each gets an automated or scripted check.
+
+## 2. Demo data
+
+### 2.1 Student (fictional, labeled in the app)
+
+Nadia (from the mock). 12th grade, SMA, Kurikulum Merdeka, overall school result 86/100, subject grades for Mathematics 88, English 84, Economics 82 (fictional). Interests: Computer Science primary; Economics secondary. Countries: US and GB. Settings: no preference for the main flow (then switched to Countryside to show the filter). Climate: mild. Intake: 2027. English test: not yet taken. Budget: IDR 1,200,000,000 per year including living costs, so the batch shows a mix of within and over bands at current indicative rates (the mock's IDR 300m would make almost every US and UK program "Over"; a low-budget variant can be shown to demonstrate that). The profile uses no real person's data.
+
+### 2.2 Counselors (fictional)
+
+Three: Counselor Ayu, Counselor Budi, Counselor Citra, each with a demo Jira user. Round robin order Ayu → Budi → Citra. A fourth request in a row returns to Ayu.
+
+### 2.3 Fictional files
+
+Three small files generated for the demo: a sample transcript PDF, a sample ID-style image (PNG, no real ID), a Word cover note. All labeled "SAMPLE – FICTIONAL".
+
+### 2.4 Controlled test event
+
+A labeled event "Test: source change" that changes one verified milestone date in a copy of a real record to show change propagation (Convex change event → affected tasks → Forge update). The UI and video narration state that the change is controlled. Real changes are used whenever one occurs.
+
+### 2.5 Reset
+
+`reset-demo` restores Nadia's profile, clears her applications, tasks, messages and files, restores the rotation pointer, and removes demo Jira items created by the demo run. It writes a `DemoResetLog` entry. Catalog data and cached sources are kept unless explicitly cleared.
+
+### 2.6 Storyline
+
+As in `spec-v1.0.md` section 14.2. Videos: a 3-minute main cut and a 2-minute voice-led cut for Cartesia.
+
+## 3. Setup guide for the user (build phase; not needed to complete the specification)
+
+Rules for everything below:
+
+- Never paste a secret into chat, a document, a screenshot or Git. Put it in the place named in the table.
+- Keep a private note of which account owns which service.
+- Use hackathon credits before paying. Check each service's current console and docs, since screens change.
+
+### 3.1 Accounts and what to bring back
+
+| Service | Get | Where the secret lives | Variable name |
+| --- | --- | --- | --- |
+| Anthropic | Console project and an API key | Convex environment | `ANTHROPIC_API_KEY` |
+| Convex | Project, dev deployment | Convex CLI login; deploy key only if needed | `CONVEX_DEPLOY_KEY` (local `.env.local`) |
+| Clerk | Application, publishable and secret keys, JWT template named `convex` | Frontend env (publishable) and Convex env (issuer URL) | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_ISSUER_DOMAIN` |
+| Bright Data | SERP API zone and Web Unlocker zone; an API key; note both zone names | Convex env and Apify Actor secrets | `BRIGHTDATA_API_KEY`, `BRIGHTDATA_SERP_ZONE`, `BRIGHTDATA_UNLOCKER_ZONE` |
+| Apify | Account, API token; the Actor is deployed with the Apify CLI | Convex env | `APIFY_TOKEN`, `APIFY_ACTOR_ID` |
+| Bitdeer | Inference API key (Console → Models → API Keys); note the model name chosen | Convex env | `BITDEER_API_KEY`, `BITDEER_MODEL` |
+| Factory | Account and API key; Droid CLI installed on the MacBook | Local worker `.env` | `FACTORY_API_KEY` |
+| Cartesia | API key | Convex env | `CARTESIA_API_KEY` |
+| Atlassian | A Jira developer site, Atlassian account email and an API token for Forge | Forge CLI login; Forge encrypted variables | `FORGE_EMAIL`, `FORGE_API_TOKEN` (local only); shared secret stored with `forge variables set --encrypt` |
+| Shared secrets | Generate two long random strings: one for Apify webhook path, one for Forge HMAC | Convex env and Forge/Apify | `APIFY_WEBHOOK_SECRET`, `FORGE_HMAC_SECRET` |
+| Figma | Education verification; confirm Claude's Figma connection | Not a secret | |
+| Mana, Notability | Accounts; use during real work | | |
+| GitHub | Repository | | |
+
+Frankfurter, Open-Meteo and GeoNames need no keys. GeoNames data is licensed CC BY (attribution required, shown in the app's footer). Open-Meteo and Frankfurter terms were not read in this session; confirm before public launch (acceptable for a non-public prototype).
+
+### 3.2 Order
+
+1. Create the accounts and keys above, claiming hackathon credits first.
+2. Set local tools: Node 22 or 24, Git, Convex CLI, Apify CLI, Forge CLI, Droid CLI. Claude gives the exact install commands when building starts.
+3. Tell Claude when each key is in place (say "Anthropic key set"). Do not send the value.
+4. Start the early live checks (below) with Claude running them and reporting results.
+
+### 3.3 Early live checks, in order
+
+1. Bright Data: 10 US and 10 UK pages from the batch; record which need Web Unlocker and which are blocked.
+2. Apify: deploy the Actor on those pages; confirm the webhook reaches Convex.
+3. Bitdeer: three pages through the schema; compare candidate models; test a long page.
+4. Cartesia: `ink-whisper` with a recorded Indonesian sample you provide (school and subject names included); confirm streaming; `sonic-3.6` Indonesian voice.
+5. Factory: custom-tools-only job; confirm built-ins are disabled.
+6. Forge: web trigger from Convex creates a Jira issue with the template.
+7. Convex: worker connects with the service credential; two simultaneous counseling requests get different counselors.
+8. Figma: confirm write access.
+
+Each result is added to `docs/devlog.md` as it happens, with your minutes and ratings.
+
+## 4. Recording the demo (user)
+
+A prepared browser profile, the reset command, the sample inputs and the narration script are provided before recording. You do not need to write code. Secrets are never on screen: use the prepared profile, close terminals that show environment variables, and check the final video before sharing.

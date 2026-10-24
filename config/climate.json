@@ -1,0 +1,10 @@
+{
+  "version": "2026-10-24.1",
+  "rules": [
+    { "class": "warm", "annualMeanCAtLeast": 15 },
+    { "class": "cold", "annualMeanCBelow": 8, "orColdestMonthMeanCBelow": -6 },
+    { "class": "mild", "coldestMonthMeanCAtLeast": 2 },
+    { "class": "cool", "otherwise": true }
+  ],
+  "order": ["warm", "mild", "cool", "cold"]
+}
