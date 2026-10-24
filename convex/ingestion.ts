@@ -248,3 +248,16 @@ export const collect = internalAction({
     }
   },
 });
+
+/** Marks a stored source as rejected (e.g. found afterwards to be off-allowlist content) and drops its candidates. */
+export const rejectSource = internalMutation({
+  args: { url: v.string(), reason: v.string() },
+  handler: async (ctx, { url, reason }) => {
+    const rows = await ctx.db.query("sources").withIndex("by_url", (q) => q.eq("url", url)).collect();
+    for (const s of rows) {
+      await ctx.db.patch(s._id, { status: "rejected_by_policy", error: reason, verification: "unavailable" });
+      for (const c of await ctx.db.query("candidates").withIndex("by_source", (q) => q.eq("sourceId", s._id)).collect()) await ctx.db.delete(c._id);
+    }
+    return { rejected: rows.length };
+  },
+});

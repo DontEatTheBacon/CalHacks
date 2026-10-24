@@ -1,0 +1,193 @@
+{
+  "version": "2026-10-24.1",
+  "note": "First verified batch (spec 4.3). Names, domains and main teaching campus towns are configuration for crawling and matching, not sourced facts; the setting class comes from GeoNames, never from this file.",
+  "institutions": [
+    {
+      "slug": "psu",
+      "name": "Penn State (University Park)",
+      "country": "US",
+      "domains": [
+        "psu.edu"
+      ],
+      "campus": {
+        "name": "University Park",
+        "town": "State College",
+        "admin1": "PA"
+      },
+      "otherCampusMarkers": [
+        "harrisburg",
+        "hazleton",
+        "world campus",
+        "worldcampus",
+        "behrend",
+        "abington",
+        "altoona",
+        "berks",
+        "brandywine",
+        "lehigh valley",
+        "mont alto",
+        "york"
+      ]
+    },
+    {
+      "slug": "msu",
+      "name": "Michigan State University",
+      "country": "US",
+      "domains": [
+        "msu.edu"
+      ],
+      "campus": {
+        "name": "East Lansing",
+        "town": "East Lansing",
+        "admin1": "MI"
+      }
+    },
+    {
+      "slug": "wisc",
+      "name": "University of Wisconsin–Madison",
+      "country": "US",
+      "domains": [
+        "wisc.edu"
+      ],
+      "campus": {
+        "name": "Madison",
+        "town": "Madison",
+        "admin1": "WI"
+      }
+    },
+    {
+      "slug": "illinois",
+      "name": "University of Illinois Urbana-Champaign",
+      "country": "US",
+      "domains": [
+        "illinois.edu"
+      ],
+      "campus": {
+        "name": "Urbana-Champaign",
+        "town": "Urbana",
+        "admin1": "IL"
+      }
+    },
+    {
+      "slug": "northeastern",
+      "name": "Northeastern University",
+      "country": "US",
+      "domains": [
+        "northeastern.edu"
+      ],
+      "campus": {
+        "name": "Boston",
+        "town": "Boston",
+        "admin1": "MA"
+      }
+    },
+    {
+      "slug": "dartmouth",
+      "name": "Dartmouth College",
+      "country": "US",
+      "domains": [
+        "dartmouth.edu"
+      ],
+      "campus": {
+        "name": "Hanover",
+        "town": "Hanover",
+        "admin1": "NH"
+      }
+    },
+    {
+      "slug": "exeter",
+      "name": "University of Exeter",
+      "country": "GB",
+      "domains": [
+        "exeter.ac.uk"
+      ],
+      "campus": {
+        "name": "Streatham (Exeter)",
+        "town": "Exeter",
+        "admin1": "ENG"
+      }
+    },
+    {
+      "slug": "sheffield",
+      "name": "University of Sheffield",
+      "country": "GB",
+      "domains": [
+        "sheffield.ac.uk"
+      ],
+      "campus": {
+        "name": "Sheffield",
+        "town": "Sheffield",
+        "admin1": "ENG"
+      }
+    },
+    {
+      "slug": "lancaster",
+      "name": "Lancaster University",
+      "country": "GB",
+      "domains": [
+        "lancaster.ac.uk"
+      ],
+      "campus": {
+        "name": "Bailrigg (Lancaster)",
+        "town": "Lancaster",
+        "admin1": "ENG"
+      }
+    },
+    {
+      "slug": "manchester",
+      "name": "University of Manchester",
+      "country": "GB",
+      "domains": [
+        "manchester.ac.uk"
+      ],
+      "campus": {
+        "name": "Manchester",
+        "town": "Manchester",
+        "admin1": "ENG"
+      }
+    },
+    {
+      "slug": "bath",
+      "name": "University of Bath",
+      "country": "GB",
+      "domains": [
+        "bath.ac.uk"
+      ],
+      "campus": {
+        "name": "Claverton Down (Bath)",
+        "town": "Bath",
+        "admin1": "ENG"
+      }
+    },
+    {
+      "slug": "lboro",
+      "name": "Loughborough University",
+      "country": "GB",
+      "domains": [
+        "lboro.ac.uk"
+      ],
+      "campus": {
+        "name": "Loughborough",
+        "town": "Loughborough",
+        "admin1": "ENG"
+      }
+    }
+  ],
+  "majors": {
+    "cs": {
+      "match": [
+        "computer science",
+        "CS"
+      ],
+      "searchUS": "computer science major bachelor's degree",
+      "searchGB": "BSc Computer Science undergraduate course"
+    },
+    "econ": {
+      "match": [
+        "economics"
+      ],
+      "searchUS": "economics major bachelor's degree",
+      "searchGB": "BSc Economics undergraduate course"
+    }
+  }
+}

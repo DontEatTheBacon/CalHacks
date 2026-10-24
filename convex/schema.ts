@@ -109,11 +109,12 @@ export default defineSchema({
 
   // ---- Catalog (written only by ingestion) ----
   institutions: defineTable({
+    slug: v.optional(v.string()),
     name: v.string(),
     country,
     domains: v.array(v.string()),
     coverageStatus: v.string(),
-  }).index("by_country", ["country"]),
+  }).index("by_country", ["country"]).index("by_slug", ["slug"]),
   campuses: defineTable({
     institutionId: v.id("institutions"),
     name: v.optional(v.string()),
@@ -131,9 +132,13 @@ export default defineSchema({
     durationYears: v.optional(v.number()),
     taxonomyCode: v.optional(v.string()),
     officialUrl: v.optional(v.string()),
+    joint: v.optional(v.boolean()),
+    entryYear: v.optional(v.number()),
+    sourceId: v.optional(v.id("sources")),
+    evidenceId: v.optional(v.id("evidence")),
     status: verification,
     version: v.number(),
-  }).index("by_institution", ["institutionId"]).index("by_campus", ["campusId"]).index("by_taxonomy", ["taxonomyCode"]),
+  }).index("by_institution", ["institutionId"]).index("by_url", ["officialUrl"]).index("by_campus", ["campusId"]).index("by_taxonomy", ["taxonomyCode"]),
   applicationRoutes: defineTable({
     type: v.union(
       v.literal("common_app"), v.literal("coalition"), v.literal("ucas"),
@@ -235,8 +240,13 @@ export default defineSchema({
   }).index("by_source", ["sourceId"]),
 
   // ---- Rules and results ----
+  // Published facts. scope "institution" applies to every program of the institution unless a
+  // program-scoped fact of the same kind exists. Each is backed by one ready candidate.
   requirements: defineTable({
-    programId: v.id("programs"),
+    institutionId: v.optional(v.id("institutions")),
+    programId: v.optional(v.id("programs")),
+    candidateId: v.optional(v.id("candidates")),
+    scope: v.optional(v.union(v.literal("institution"), v.literal("program"))),
     type: v.union(v.literal("academic"), v.literal("subject"), v.literal("language"), v.literal("test"), v.literal("document")),
     text: v.string(),
     threshold: v.optional(v.string()),
@@ -246,7 +256,7 @@ export default defineSchema({
     verification,
     version: v.number(),
     supersedes: v.optional(v.id("requirements")),
-  }).index("by_program", ["programId"]),
+  }).index("by_program", ["programId"]).index("by_institution", ["institutionId"]).index("by_candidate", ["candidateId"]),
   gradeRules: defineTable({
     institutionId: v.id("institutions"),
     programId: v.optional(v.id("programs")),
@@ -269,7 +279,10 @@ export default defineSchema({
     ruleVersion: v.string(),
   }).index("by_user_program", ["userId", "programId"]),
   costItems: defineTable({
-    programId: v.id("programs"),
+    institutionId: v.optional(v.id("institutions")),
+    programId: v.optional(v.id("programs")),
+    candidateId: v.optional(v.id("candidates")),
+    scope: v.optional(v.union(v.literal("institution"), v.literal("program"))),
     kind: v.union(v.literal("tuition"), v.literal("fee"), v.literal("living"), v.literal("housing")),
     amount: v.optional(v.number()),
     currency: v.optional(v.string()),
@@ -279,7 +292,7 @@ export default defineSchema({
     exclusions: v.optional(v.string()),
     evidenceId: v.optional(v.id("evidence")),
     academicYear: v.optional(v.string()),
-  }).index("by_program", ["programId"]),
+  }).index("by_program", ["programId"]).index("by_institution", ["institutionId"]).index("by_candidate", ["candidateId"]),
   fxRates: defineTable({
     base: v.string(),
     quote: v.string(),
@@ -290,7 +303,11 @@ export default defineSchema({
 
   // ---- Timelines ----
   milestones: defineTable({
-    programId: v.id("programs"),
+    institutionId: v.optional(v.id("institutions")),
+    programId: v.optional(v.id("programs")),
+    candidateId: v.optional(v.id("candidates")),
+    scope: v.optional(v.union(v.literal("institution"), v.literal("program"))),
+    scholarship: v.optional(v.boolean()),
     intakeId: v.optional(v.id("intakes")),
     roundId: v.optional(v.id("admissionRounds")),
     category: v.string(),
@@ -307,7 +324,7 @@ export default defineSchema({
     verification,
     version: v.number(),
     supersedes: v.optional(v.id("milestones")),
-  }).index("by_program", ["programId"]),
+  }).index("by_program", ["programId"]).index("by_institution", ["institutionId"]).index("by_candidate", ["candidateId"]),
   studentApplications: defineTable({
     userId: v.id("users"),
     programId: v.id("programs"),

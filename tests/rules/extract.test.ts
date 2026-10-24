@@ -88,3 +88,11 @@ test("the validator rejects excerpts that are not in the source", () => {
   assert.ok(c);
   assert.deepEqual(validate(c, "different page"), { ok: false, reason: "excerpt not found in source text" });
 });
+
+test("vertical tables: headers and amounts on separate lines are matched by position (Lancaster layout)", () => {
+  const text = ["Fees and funding", "Our Undergraduate Tuition Fees for 2027/28 are:", "Home |", "International |", "£10,050 |", "£31,700 |"].join("\n");
+  const cs = costs(extract(text));
+  assert.deepEqual(cs.map((c) => [c.amount, c.applicantCategory, c.status]), [[10050, "domestic", "needs_confirmation"], [31700, "international", "ready"]]);
+  assert.equal(cs[1]!.academicYear, "2027/28");
+  assert.equal(cs[1]!.period, "annual");
+});

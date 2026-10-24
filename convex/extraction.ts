@@ -92,6 +92,7 @@ export const extractPending = internalAction({
     for (const sourceId of batch) await ctx.runAction(internal.extraction.extractSource, { sourceId });
     const remaining = pending.length - batch.length;
     if (remaining > 0) await ctx.scheduler.runAfter(0, internal.extraction.extractPending, {});
+    else await ctx.scheduler.runAfter(0, internal.catalog.refresh, {});
     return { extracted: batch.length, remaining };
   },
 });

@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
+import type * as catalog from "../catalog.js";
 import type * as counseling from "../counseling.js";
 import type * as crons from "../crons.js";
 import type * as extraction from "../extraction.js";
@@ -18,6 +19,8 @@ import type * as http from "../http.js";
 import type * as ingestion from "../ingestion.js";
 import type * as jobs from "../jobs.js";
 import type * as lib_access from "../lib/access.js";
+import type * as lib_brightdata from "../lib/brightdata.js";
+import type * as lib_catalog_programs from "../lib/catalog/programs.js";
 import type * as lib_extract_rules from "../lib/extract/rules.js";
 import type * as lib_fileSignature from "../lib/fileSignature.js";
 import type * as lib_rules_climate from "../lib/rules/climate.js";
@@ -43,6 +46,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
+  catalog: typeof catalog;
   counseling: typeof counseling;
   crons: typeof crons;
   extraction: typeof extraction;
@@ -51,6 +55,8 @@ declare const fullApi: ApiFromModules<{
   ingestion: typeof ingestion;
   jobs: typeof jobs;
   "lib/access": typeof lib_access;
+  "lib/brightdata": typeof lib_brightdata;
+  "lib/catalog/programs": typeof lib_catalog_programs;
   "lib/extract/rules": typeof lib_extract_rules;
   "lib/fileSignature": typeof lib_fileSignature;
   "lib/rules/climate": typeof lib_rules_climate;

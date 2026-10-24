@@ -3,7 +3,7 @@
 // is "ready" only when nothing about it has to be guessed; otherwise it is "needs_confirmation" with
 // the reasons. Page text is data: nothing in it changes what these rules do.
 
-export const RULES_VERSION = "rules-2026-10-24.3";
+export const RULES_VERSION = "rules-2026-10-24.4";
 
 export type Category = "international" | "out_of_state" | "domestic" | "unknown";
 export type ItemType = "tuition" | "mandatory_fee" | "living_estimate" | "housing_estimate";
@@ -31,6 +31,8 @@ const YEAR_RANGE = /\b(20\d\d)\s?[/–-]\s?(20)?(\d\d)\b/;
 function category(text: string | null | undefined): Category {
   if (!text) return "unknown";
   if (INTL.test(text)) return "international";
+  // A table header that is just "Home" or "UK" means the domestic rate.
+  if (/^(home|uk|home\s*\/\s*uk|home \(uk\)|england|scotland)$/i.test(text.trim())) return "domestic";
   // "Non-PA Resident" contains "PA Resident": test out-of-state before domestic.
   if (OUT_OF_STATE.test(text)) return "out_of_state";
   if (DOMESTIC.test(text)) return "domestic";
@@ -133,6 +135,30 @@ function scopeExclusion(lines: string[], i: number, label: string | null): strin
   return null;
 }
 
+
+/** An amount-only line ("£31,700 |"): the amount is the whole content. */
+const amountOnly = (line: string) => {
+  const t = line.replace(/\s*\|\s*$/, "").replace(/\s+\d$/, "").trim();
+  const m = money(t);
+  return m.length === 1 && t === m[0]!.raw.trim();
+};
+
+/**
+ * Vertical table: N header lines followed by N amount-only lines ("Home |", "International |",
+ * "£10,050 |", "£31,700 |"). Returns the header for the amount at line i, matched by position.
+ */
+function verticalHeader(lines: string[], i: number): string | null {
+  if (!amountOnly(lines[i]!)) return null;
+  let s = i, e = i;
+  while (s > 0 && amountOnly(lines[s - 1]!)) s--;
+  while (e + 1 < lines.length && amountOnly(lines[e + 1]!)) e++;
+  const n = e - s + 1;
+  if (n < 2 || s - n < 0) return null;
+  const heads = lines.slice(s - n, s);
+  if (heads.some((h) => money(h).length || h.length > 60)) return null;
+  return heads[i - s]!.replace(/\s*\|\s*$/, "").trim();
+}
+
 function costs(lines: string[]): CostCandidate[] {
   const out: CostCandidate[] = [];
   // Fallback: an academic year stated near the top of the page ("…in the 2027/28 academic year").
@@ -149,7 +175,8 @@ function costs(lines: string[]): CostCandidate[] {
     const headers = pipe ? columnHeaders(lines, i, pipe.length) : null;
     // Label: first table cell, or the text before the amount, or the line above a bare amount.
     const before = line.slice(0, found[0]!.index).replace(/[:\-–|]\s*$/, "").trim();
-    const label = pipe ? pipe[0]! : before.length > 2 ? before : i > 0 && !money(lines[i - 1]!).length ? lines[i - 1]! : null;
+    const vertical = verticalHeader(lines, i);
+    const label = vertical ?? (pipe ? pipe[0]! : before.length > 2 ? before : i > 0 && !money(lines[i - 1]!).length ? lines[i - 1]! : null);
 
     const isTotal = /\btotal\b|cost of attendance|saving|differential|discount|scholarship|waiver|reduction|deposit|after aid|average|net price|median/i.test(`${label ?? ""} ${line}`);
     // Nearest heading that states a cost type / period; the row itself wins over headings.

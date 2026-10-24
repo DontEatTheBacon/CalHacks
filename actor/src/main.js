@@ -3,7 +3,7 @@
 // Bright Data Web Unlocker when a plain fetch fails, cleaned text, content hash and a
 // per-page status. One dataset item per page ("source package"). Page content is data only.
 import { Actor, log } from "apify";
-import { backoff, classify, extractLinks, isAllowed, normalizeUrl, sha256, titleOf } from "./lib.js";
+import { backoff, classify, declaredUrl, extractLinks, isAllowed, normalizeUrl, sha256, titleOf } from "./lib.js";
 
 await Actor.init();
 
@@ -108,8 +108,10 @@ async function worker() {
     const out = await collect(req.url);
     const finalUrl = out.res.finalUrl ?? req.url;
     const ok = out.verdict.status === "ok";
-    // A redirect off the allowlist is not collected.
-    const offList = ok && !isAllowed(finalUrl, allowedDomains);
+    // A redirect off the allowlist is not collected, including one hidden behind Web Unlocker
+    // (caught through the page's declared canonical address).
+    const declared = ok ? declaredUrl(out.res.html, finalUrl) : null;
+    const offList = ok && (!isAllowed(finalUrl, allowedDomains) || (declared !== null && !isAllowed(declared, allowedDomains)));
     const text = ok && !offList ? out.verdict.text.slice(0, MAX_TEXT) : null;
     await Actor.pushData({
       url: req.url,
@@ -122,7 +124,7 @@ async function worker() {
       httpStatus: out.res.httpStatus ?? null,
       attempts: out.attempts,
       plainOutcome: out.plainOutcome ? { status: out.plainOutcome.status, detail: out.plainOutcome.detail ?? null } : null,
-      error: offList ? "Redirected off the allowlist" : ok ? null : (out.verdict.detail ?? out.verdict.status),
+      error: offList ? `Redirected off the allowlist${declared ? ` (page declares ${new URL(declared).hostname})` : ""}` : ok ? null : (out.verdict.detail ?? out.verdict.status),
       title: ok ? titleOf(out.res.html) : null,
       text,
       textTruncated: ok ? out.verdict.text.length > MAX_TEXT : false,

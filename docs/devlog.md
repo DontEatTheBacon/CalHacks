@@ -166,3 +166,13 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Limits: coverage is low (most pages state costs without saying who pays them); program-level matching (which candidate belongs to which program) is the next step.
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — Catalog: institutions, programs, published facts (Claude Code)
+- Stage: code generation and live data.
+- `config/institutions.json` (12 institutions, main campus town; setting stays unclassified until GeoNames evidence). Program discovery at runtime: 24 Bright Data SERP queries from Convex (`catalog:discoverPrograms`), 22 found official pages (Exeter CS hit repeated empty responses; Manchester CS had no result on its own domain); 66 URLs collected by the Actor (run `Ef5SoHm1BUewwwdvr`).
+- Programs are identified from page titles by rule (`convex/lib/catalog/programs.ts`): bachelor's degree + major required; listing pages, foundation/transfer variants and other Penn State campuses excluded; pages about the same program merged by subject and degree family. Result: 28 programs (19 single-subject, 9 joint) across all 12 institutions.
+- Facts are published from ready candidates (`catalog:publishFacts`): program scope when the fact is on the program's page or its row names the program; institution scope otherwise; institution-wide tuition withheld when several amounts exist; conflicting English minimums withheld; course-specific rows never become institution-wide; duplicates published once; facts removed when their candidate disappears. Runs automatically after each crawl's extraction. Program view (`catalog:listPrograms`) lists unknowns explicitly.
+- Live result: 11 cost items, 18 requirements, 7 deadlines. Programs with international tuition 4/28, English minimum 15/28, application deadline 3/28; grade requirement for Indonesian students unknown for all (no ready rule yet).
+- Rework found in review, each fixed with a test: Bath listing pages repeated English requirements hundreds of times (now de-duplicated); Lancaster's vertical fee table gave the Home fee the "International" label (positional matching added); duplicate programs from catalog and department pages; "CS Major" marked joint; a fee row for an uncatalogued course became institution-wide tuition; a `go.wisc.edu` short link redirected to US News through Web Unlocker and was stored as official (Actor now checks the page's declared canonical address; source rejected).
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):

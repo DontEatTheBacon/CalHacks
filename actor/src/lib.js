@@ -118,3 +118,19 @@ export function classify({ httpStatus, html, error, brdError }) {
 
 /** Exponential backoff with jitter, in ms. */
 export const backoff = (attempt, baseMs = 1000) => Math.round(baseMs * 2 ** (attempt - 1) * (0.75 + Math.random() * 0.5));
+
+/**
+ * The page's own declared address (<link rel="canonical"> or og:url). Web Unlocker follows
+ * redirects without reporting the final URL, so this is how an off-allowlist redirect is caught.
+ */
+export function declaredUrl(html, baseUrl) {
+  const m = html.match(/<link\b[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i)
+    ?? html.match(/<link\b[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["']/i)
+    ?? html.match(/<meta\b[^>]*property=["']og:url["'][^>]*content=["']([^"']+)["']/i);
+  if (!m) return null;
+  try {
+    return new URL(decodeEntities(m[1]), baseUrl).toString();
+  } catch {
+    return null;
+  }
+}

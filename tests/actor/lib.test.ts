@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 // @ts-expect-error plain JS module without types
-import { classify, extractLinks, htmlToText, isAllowed, normalizeUrl, sha256, titleOf } from "../../actor/src/lib.js";
+import { classify, declaredUrl, extractLinks, htmlToText, isAllowed, normalizeUrl, sha256, titleOf } from "../../actor/src/lib.js";
 
 const allow = ["sheffield.ac.uk", "psu.edu"];
 
@@ -66,4 +66,12 @@ test("fetch outcomes map to source statuses and retry decisions", () => {
 
 test("content hash is stable", () => {
   assert.equal(sha256("abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+});
+
+test("declared canonical address exposes a redirect that Web Unlocker hid", () => {
+  const usnews = '<html><head><link rel="canonical" href="https://www.usnews.com/best-colleges/rankings/economics"></head></html>';
+  assert.equal(declaredUrl(usnews, "https://go.wisc.edu/ga1flz"), "https://www.usnews.com/best-colleges/rankings/economics");
+  assert.ok(!isAllowed(declaredUrl(usnews, "https://go.wisc.edu/ga1flz"), ["wisc.edu"]));
+  assert.equal(declaredUrl('<meta property="og:url" content="/study/x">', "https://www.bath.ac.uk/a"), "https://www.bath.ac.uk/study/x");
+  assert.equal(declaredUrl("<p>no canonical</p>", "https://x.ac.uk/"), null);
 });
