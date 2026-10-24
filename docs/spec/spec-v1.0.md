@@ -62,7 +62,7 @@ A web application that helps Indonesian high school students discover, compare a
 
 AI agents are not human actors. They are components inside the system.
 
-### 1.3 Named community (for the Anthropic and Microsoft tracks)
+### 1.3 Named community (for the Microsoft track)
 
 Indonesian high school students preparing undergraduate applications to US and UK universities. "International schools" means overseas universities and their bachelor's programs (assumption from the original requirements, still to be confirmed by the user).
 
@@ -239,7 +239,7 @@ Lexicographic ordering on banded outcomes. No weights and no match percentage. K
 
 Definitions:
 
-- **Major relevance:** each program is classified into an internal taxonomy mapped to CIP (US) and HECoS (GB) codes through a configuration table. Direct = in the student's chosen majors; Related = same broad field in the taxonomy; Other; Unknown if unclassified. The extraction model (Claude) proposes the classification with evidence; the mapping table is deterministic.
+- **Major relevance:** each program is classified into an internal taxonomy mapped to CIP (US) and HECoS (GB) codes through a configuration table. Direct = in the student's chosen majors; Related = same broad field in the taxonomy; Other; Unknown if unclassified. Keyword rules over the program name and page title propose the classification with evidence; the mapping table is deterministic.
 - **Academic status:** from the grade comparison (section 5.5). Needs confirmation ranks above Below because unknown is not a negative result.
 - **Budget fit:** annual comparable cost = tuition + mandatory fees + institution-published living estimate when available, converted with a sourced rate. "Within budget (costs incomplete)" means known costs fit but the living estimate or fees are missing. "Slightly over" means over by no more than a configured percentage (default 15%).
 - **Climate fit:** campus climate normals compared to configured bands (section 5.3.1).
@@ -376,7 +376,7 @@ These categories define what to research and display. They are not statements of
 
 ### 5.11 Voice adviser
 
-- Cartesia `ink-whisper` (Indonesian) for speech-to-text and `sonic-3.6` for text-to-speech; Claude responds in Indonesian directly from the transcript.
+- Cartesia `ink-whisper` (Indonesian) for speech-to-text and `sonic-3.6` for text-to-speech; replies are Indonesian template answers built from the same verified records as the text interface (no generative AI).
 - Voice completes real tasks: voice intake fills profile fields with spoken confirmation; the student can ask for the next deadline, a comparison, or request counseling, using the same verified records as text.
 - States: microphone permission, listening, thinking, speaking, unclear speech, error, interruption, text fallback with visible transcript.
 - Off by default with a notice about audio processing by the speech provider (many users are minors).
@@ -394,8 +394,8 @@ These categories define what to research and display. They are not statements of
 | Files | Convex storage, private, served through an authenticated HTTP action |
 | Source discovery | Bright Data SERP API |
 | Collection | Custom Apify Actor, which calls Bright Data Web Unlocker when plain fetches fail |
-| Extraction | Claude API with structured JSON-schema output (Bitdeer dropped on 2026-10-24 by the user; the Bitdeer track is not entered) |
-| Advising | Claude API from Convex actions |
+| Extraction | Rule-based extractor in Convex (deterministic pattern rules over cleaned page text; candidate records with verbatim excerpts). Bitdeer and the Claude API were both dropped on 2026-10-24 by the user |
+| Advising | Template explanations and next-step summaries generated from verified records; no generative AI |
 | Agent work | Factory Droid SDK in a Node worker (Mac for the demo; Linux container path documented) |
 | Counselor automation | Atlassian Forge app on a Jira developer site |
 | Voice | Cartesia STT and TTS, server-issued short-lived browser tokens |
@@ -412,7 +412,7 @@ flowchart TD
     convex["Convex: data, rules, jobs, HTTP endpoints"]
     bd["Bright Data SERP + Web Unlocker"]
     apify["Apify Actor: crawl orchestration"]
-    claude["Claude API: extraction, grounded explanations and drafts"]
+    rules["Rule-based extractor and explanation templates (in Convex)"]
     worker["Factory Droid worker: bounded research and checklists"]
     forge["Forge app in Jira: counselor tasks"]
     voice["Cartesia: STT + TTS"]
@@ -424,9 +424,8 @@ flowchart TD
     convex -->|"start run (async)"| apify
     apify -->|"unblock when needed"| bd
     apify -->|"webhook: run finished"| convex
-    convex -->|"extract"| claude
-    claude -->|"candidate records + evidence"| convex
-    convex --> claude
+    convex -->|"page text"| rules
+    rules -->|"candidate records + evidence"| convex
     convex <-->|"job queue, proposals"| worker
     convex -->|"events (web trigger)"| forge
     forge -->|"scheduled summary / polling fallback"| convex
@@ -440,11 +439,11 @@ flowchart TD
 3. Convex starts an Apify Actor run asynchronously with the URL list and limits.
 4. The Actor queues, de-duplicates, follows same-domain links to a depth limit, retries with backoff, uses Web Unlocker for blocked pages, cleans text, hashes content, records per-page status, and outputs source packages.
 5. An Apify webhook (secret path, idempotent) notifies Convex; polling is the backup. Convex fetches the dataset by ID.
-6. Claude extracts typed candidate fields with evidence excerpts and null-with-reason for unknowns. Long pages are chunked.
+6. The rule-based extractor finds typed candidate fields (amounts with currency and period, dates, requirement phrases) with verbatim evidence excerpts; anything it cannot match stays unknown.
 7. The deterministic validator checks: excerpt present in source; program identity; international-applicant applicability; currencies and periods; dates and timezones; grade-rule scope; consistency across sources. Invalid or ambiguous fields are rejected or flagged, never guessed.
-8. Convex stores versioned validated records with provenance (source, Apify run, Claude extraction call, validator result). Conflicts are preserved.
+8. Convex stores versioned validated records with provenance (source, Apify run, extractor rule version, validator result). Conflicts are preserved.
 9. Explicit rules apply filters, grade comparisons, costs, ranking components and timeline dependencies.
-10. Claude explains results from those records and asks for missing student context.
+10. Templates explain results from those records and list the missing student context.
 
 Caching is allowed. Live-data demonstrations perform real retrieval, and the UI labels cached and freshly retrieved data differently.
 
@@ -455,7 +454,7 @@ Caching is allowed. Live-data demonstrations perform real retrieval, and the UI 
 | Student saves a program for application | Factory worker performs bounded research and checklist work | Sourced plan, unresolved questions, execution history, persisted proposed tasks |
 | Verified requirement or deadline change | Reassess affected applications, regenerate dependent proposals, notify Forge for assigned counselors | Before and after values, deadline risk, updated tasks |
 | Student requests counseling | Round-robin assignment, context preserved, case work prepared | Pending or assigned state, message thread, counselor context |
-| Student asks what to do next | Claude summarizes actual tasks and evidence; voice optional | Grounded actionable answer |
+| Student asks what to do next | Templates summarize actual tasks and evidence; voice optional | Grounded actionable answer |
 | Missing grade equivalency or date | Bounded official-source research; retain uncertainty if unsupported | Needs-confirmation state and optional counseling |
 
 ### 6.5 Environments
@@ -540,14 +539,16 @@ All under `config/`, versioned, with changes recorded:
 
 ## 10. Agent specifications
 
-### 10.1 Claude grounding contract
+### 10.1 Explanation contract (templates)
+
+On 2026-10-24 the user decided not to use the Claude API (cost): extraction is rule-based code and explanations are templates built from verified records. The Anthropic track is not entered.
 
 - Input: only verified or explicitly flagged records with IDs, plus the student's own entries.
-- Output: explanation or draft citing record IDs; separate sections for what is known, unknown and needs confirmation.
-- The server rejects output containing dates, amounts or conversions not present in cited records and returns "needs confirmation".
+- Output: explanation citing record IDs; separate sections for what is known, unknown and needs confirmation.
+- A template slot whose record is missing renders "needs confirmation"; templates never compute conversions that are not in a cited record.
 - Never states or implies acceptance likelihood, guarantees or visa outcomes.
-- Drafts use only student-provided facts.
-- Per-student caps and cost logging apply. Retrieved content is never obeyed as instructions.
+- No application drafts are written for the student in the first release.
+- Retrieved content is data only; it is never executed or followed.
 
 ### 10.2 Factory Droid worker
 
@@ -607,7 +608,7 @@ Design process: foundations and components first (colors with semantic states fo
 
 - Failures of any external service retain student input and show actionable messages.
 - Job table with retries, idempotency keys and visible states.
-- Rate limit handling for the Claude API and Apify.
+- Rate limit handling for Bright Data and Apify.
 - Cached versus fresh data labeled.
 
 ### 12.3 Privacy, retention and deletion
@@ -629,7 +630,7 @@ Design process: foundations and components first (colors with semantic states fo
 
 ### 12.6 Observability
 
-- An evidence view shows, for any displayed fact: source URL, retrieval time, Apify run, Claude extraction, validator result, and cached versus fresh status.
+- An evidence view shows, for any displayed fact: source URL, retrieval time, Apify run, extractor rule, validator result, and cached versus fresh status.
 
 ## 13. Acceptance scenarios
 
@@ -670,7 +671,7 @@ A fictional Indonesian 12th-grade student, clearly labeled fictional in the app,
 ### 14.2 Storyline (about 3 minutes)
 
 1. Intake (Indonesian UI), with voice for part of it.
-2. Live research on one program: show Bright Data discovery, the Apify run, Claude extraction and the validated record with sources.
+2. Live research on one program: show Bright Data discovery, the Apify run, rule-based extraction and the validated record with sources.
 3. Three sourced matches with four band chips, including a Needs-confirmation grade case.
 4. Compare and shortlist; the Factory agent builds the checklist and timeline with visible steps.
 5. Counseling requested before shortlisting; round-robin assignment; a Jira work item appears with an audit trail.
@@ -692,7 +693,6 @@ The normative testable requirements are in sponsor-technical-requirements.md. In
 | Apify | Custom Actor performing all collection |
 | Bright Data | SERP discovery and Web Unlocker retrieval, essential and live |
 | Convex | Backend, auth enforcement, jobs, files, round robin |
-| Anthropic | Structured extraction, grounded explanations, questions, plans, drafts |
 | Factory | Triggered bounded agent work with visible steps |
 | Atlassian | Installed Forge app creating real Jira work |
 | Cartesia | Core Indonesian voice flow |
@@ -709,7 +709,7 @@ At the start of the build, once accounts and keys exist (see sponsor-technical-r
 
 1. 10 US and 10 UK university URLs through Bright Data Web Unlocker.
 2. A small Actor run reaching Convex through the webhook.
-3. Claude extraction on three pages: schema compliance and chunking.
+3. Rule-based extraction on real pages: precision of extracted amounts and dates against the excerpts.
 4. `ink-whisper` with recorded Indonesian speech.
 5. Node worker connecting to Convex with a scoped credential.
 6. Droid SDK run with custom tools only.
@@ -724,7 +724,7 @@ At the start of the build, once accounts and keys exist (see sponsor-technical-r
 | 0 | Early technical checks; account capability notes | devlog entries |
 | 1 | Convex schema, Convex Auth, roles, access tests | Convex docs page |
 | 2 | Figma foundations and core screens; start real Notability and Mana use | Stage-log entries |
-| 3 | Ingestion: Actor, Bright Data, Claude extraction, validator, coverage | Run links, screenshots |
+| 3 | Ingestion: Actor, Bright Data, rule-based extraction, validator, coverage | Run links, screenshots |
 | 4 | Intake, filters, ranking, costs, grade comparison | Test results |
 | 5 | Program details, shortlist, timelines, application workspace | |
 | 6 | Round robin, messages, files, counselor views | |
@@ -766,7 +766,7 @@ Sequencing follows risk: the integrations most likely to break the plan (Bright 
 ### 19.2 User actions (build phase; none is needed to complete the specification)
 
 - Accounts, keys and credits for each service; Figma Education verification.
-- Real validation conversations (Anthropic and Microsoft criteria).
+- Real validation conversations (Microsoft criteria).
 - Genuine Notability and Mana use during development, public Mana pages, minutes and ratings for the stage log.
 - Checking unresolved sponsor rules with the organizers.
 - Recording the videos.
@@ -883,7 +883,7 @@ Carried over from the original technology-and-award-requirements.md. The text be
 
 | Sponsor / track | Listed prize | Judging emphasis as supplied |
 | --- | --- | --- |
-| Anthropic | $5,000 Claude credits, one year Claude Max 20x, office hours | Named specific community; real problem investigated with affected people; usable working product; thoughtful Claude use and awareness of harms |
+| Anthropic (not entered; Claude API dropped 2026-10-24) | $5,000 Claude credits, one year Claude Max 20x, office hours | Named specific community; real problem investigated with affected people; usable working product; thoughtful Claude use and awareness of harms |
 | Bright Data | 1st $1,500 credits + $500 Amazon card; 2nd $1,000 + $350; 3rd $500 + $250 | Live public web data essential; real results; handles blocks, slow responses, empty results; disqualifies login/paywall scraping, non-public personal data, mocked data, README-only mention |
 | Apify Best Use | $2,000 / $1,000 / $800 / $400 / $400 | Meaningful use; product quality |
 | Apify Best Actor | $400 (combined Apify total $5,000) | Actor built for the event; conditions to be confirmed |

@@ -34,19 +34,19 @@ Process-evidence requirements (Figma, Mana, Notability documentation) are in awa
 | BD-6 | Cached data and newly retrieved data are labeled differently. No mocked or hardcoded results appear as live. | UI badge test; code review for hardcoded university data. |
 | BD-7 | RISK: Web Unlocker may return policy blocks for some public university domains before account verification, and obeys robots.txt. Run a 10-URL live test per country as the first technical check. If a domain is blocked, record it in coverage status and use plain fetch in the Actor for it, never an unofficial source. | Test result recorded in the devlog. |
 
-## 3. Structured extraction (Claude; Bitdeer dropped)
+## 3. Structured extraction (rule-based; Bitdeer and Claude dropped)
 
-Bitdeer was dropped on 2026-10-24 (user decision): extraction uses Claude, and the project does not enter the Bitdeer track. The IDs are kept so references stay valid; these are engineering requirements now, not a sponsor track.
+Bitdeer was dropped on 2026-10-24 (user decision), then the Claude API as well. On 2026-10-24 the user decided not to use the Claude API (cost): extraction is rule-based code and explanations are templates built from verified records. The Anthropic track is not entered. The IDs are kept so references stay valid; these are engineering requirements now, not a sponsor track.
 
 | ID | Requirement | Verification |
 | --- | --- | --- |
-| BT-1 | All extraction of program, cost, grade-policy and milestone fields from page text uses the Claude API with structured (JSON-schema) output. | Every `ExtractionRun` references a Claude request ID and model name. |
+| BT-1 | Extraction of program, cost, grade-policy and milestone fields from page text uses deterministic rules in code, producing the candidate-record schema. | Every `ExtractionRun` records the extractor rule version. |
 | BT-2 | Each extracted field carries a verbatim evidence excerpt. A deterministic validator rejects any field whose excerpt is not found in the source text, or whose institution, campus, intake, or applicant-type scope is unclear. | Test pages with planted wrong values are rejected. |
-| BT-3 | Respect Anthropic rate and spend limits: a bounded queue with backoff for 429/529 and a stop on billing errors. | Load test with 200 pages does not drop records silently. |
-| BT-4 | Very long pages are chunked to keep requests and cost bounded. Chunk results are merged with conflicts preserved. | Test on a long requirements page. |
+| BT-3 | Extraction runs in bounded batches so a large crawl cannot exceed Convex action limits. | 150-page run completes without dropped records. |
+| BT-4 | Results from several pages about the same program are merged with conflicts preserved. | Test on a long requirements page. |
 | BT-5 | Unknown values stay unknown; the model must be able to return null with a reason. | Schema allows null and tests confirm no filled-in guesses. |
 | BT-6 | UI and docs show source text → extracted fields → saved record. | Evidence view for one record. |
-| BT-7 | The extraction model is set in config and recorded on every run; schema compliance is tested on real pages before ingestion runs at scale. | Test run on 3 real pages. |
+| BT-7 | Rule precision is measured on real stored pages before ingestion runs at scale; rules that produce wrong values are fixed or removed. | Precision check on the first-batch pages, recorded in the devlog. |
 
 ## 4. Convex — backend, data and access control
 
@@ -61,14 +61,13 @@ Bitdeer was dropped on 2026-10-24 (user decision): extraction uses Claude, and t
 | CV-7 | Deletion: student-requested deletion removes records, messages and stored files, and a retention job enforces the configured period (default 10 years). | Delete test leaves no orphan files. |
 | CV-8 | Schema and access rules are documented in `docs/sponsors/convex.md`. | Doc exists and matches code. |
 
-## 5. Anthropic — Claude in the running product
+## 5. Grounded explanations (templates; Anthropic track not entered)
+
+On 2026-10-24 the user decided not to use the Claude API (cost): extraction is rule-based code and explanations are templates built from verified records. The Anthropic track is not entered. AN-1, AN-3 and AN-4 no longer apply.
 
 | ID | Requirement | Verification |
 | --- | --- | --- |
-| AN-1 | Claude is called at runtime for: match explanations, clarifying questions, application plan summaries, and student-reviewed drafts. | API call log in the demo. |
-| AN-2 | Claude receives only verified records with IDs and must cite those IDs. The server rejects an answer containing dates, amounts or conversions that don't match a cited record. | Test prompts asking for an unsupported deadline or GPA conversion get "needs confirmation". |
-| AN-3 | Drafts use only facts the student entered; no invented achievements. | Draft test with sparse profile. |
-| AN-4 | Per-student daily call and token caps, with cost logging. | Cap test. |
+| AN-2 | Explanations are built only from verified records with IDs and cite them. A missing record renders "needs confirmation"; no date, amount or conversion appears that is not in a cited record. | Test: unsupported deadline or GPA conversion shows "needs confirmation". |
 | AN-5 | The named community (Indonesian high school students applying to US/UK undergraduate programs) appears in the README and product copy. Failure modes are documented in `docs/failure-modes.md`. | Docs exist. |
 | AN-6 | Retrieved web content is untrusted data, never instructions. | Prompt-injection test page. |
 
@@ -129,7 +128,7 @@ Bitdeer was dropped on 2026-10-24 (user decision): extraction uses Claude, and t
 | --- | --- | --- |
 | X-1 | Every integration must be used in the running product or in the required development process. A mention in the README alone does not count. | Each sponsor has a `docs/sponsors/<name>.md` with trigger, contract, run example and limits. |
 | X-2 | No secrets in the repository, client code, logs, screenshots or recordings. | Secret scan before submission. |
-| X-3 | An evidence view in the app lets a reviewer see, for any shown fact: source URL, retrieval time, Apify run, Claude extraction, validator result. | Used in the demo. |
+| X-3 | An evidence view in the app lets a reviewer see, for any shown fact: source URL, retrieval time, Apify run, extractor rule, validator result. | Used in the demo. |
 | X-4 | Demo uses fictional students with real public university data, labeled. A reset script restores the demo state. | Reset test. |
 | X-5 | Failures in any external service keep the student's input and show an actionable message. | Fault tests per service. |
 
@@ -137,7 +136,7 @@ Bitdeer was dropped on 2026-10-24 (user decision): extraction uses Claude, and t
 
 1. 10 real US and 10 real UK university URLs through Bright Data Web Unlocker (BD-7).
 2. A small Actor run on the same URLs, reaching Convex through a webhook (AP-3 to AP-6).
-3. Claude extraction on 3 pages: schema compliance and chunking (BT-1, BT-4, BT-7).
+3. Rule-based extraction precision on the stored first-batch pages (BT-1, BT-7).
 4. `ink-whisper` with recorded Indonesian speech (CA-1).
 5. Node worker connecting to Convex with a scoped credential (CV-6).
 6. Droid SDK custom-tool-only run, confirming built-in tools are disabled (FD-2).

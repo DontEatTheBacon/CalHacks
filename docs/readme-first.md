@@ -69,8 +69,8 @@ If documents disagree, `spec-v1.0.md` wins; then resolve the conflict explicitly
 | Counseling | Optional, requestable at any stage, assigned **round robin**, asynchronous in-app messages, explicit file sharing |
 | Files | PDF, Word (.doc/.docx), JPEG, PNG, HEIC/HEIF; 10 MB per file; JPEG copy for HEIC; private storage with authenticated download |
 | Retention | 10 years by default, configurable; student-requested deletion overrides |
-| Voice | Cartesia `ink-whisper` (Indonesian listening) and `sonic-3.6` (speaking); Claude replies in Indonesian; text fallback; off by default |
-| Stack | Next.js + TypeScript + Tailwind; Convex (with Convex Auth, replacing Clerk); Bright Data SERP + Web Unlocker; **a custom Apify Actor (mandatory)**; Claude API (also does extraction; Bitdeer dropped 2026-10-24); Factory Droid SDK worker; Atlassian Forge app on Jira; Cartesia; Frankfurter, Open-Meteo, GeoNames; hosting Convex cloud + frontend on Vercel or the MacBook + worker on the MacBook |
+| Voice | Cartesia `ink-whisper` (Indonesian listening) and `sonic-3.6` (speaking); Indonesian template replies; text fallback; off by default |
+| Stack | Next.js + TypeScript + Tailwind; Convex (with Convex Auth, replacing Clerk); Bright Data SERP + Web Unlocker; **a custom Apify Actor (mandatory)**; rule-based extraction and template explanations (Bitdeer and the Claude API dropped 2026-10-24); Factory Droid SDK worker; Atlassian Forge app on Jira; Cartesia; Frankfurter, Open-Meteo, GeoNames; hosting Convex cloud + frontend on Vercel or the MacBook + worker on the MacBook |
 | Process tools | Figma (design), Mana and Notability (real development evidence, done by the user), GitHub |
 | Product name | Langkah |
 | Interviews | The user reports interviews with real people were done and the workflow is based on them. **The details have not been supplied.** ask for them (section 7) |
@@ -108,10 +108,10 @@ Suggested work packages:
 | 1 | Convex schema, Convex Auth, roles, access tests, job table, file storage with authenticated download | repository, Convex project | Do first; others build on it |
 | 2 | Rules engines as pure functions with unit tests: ranking, cost bands, climate and setting classes, grade comparison outcomes, deadline risk, round robin | spec, config | No keys needed; can start right after WP1 schema is agreed |
 | 3 | Apify Actor (queue, dedupe, link following, retries, Web Unlocker fallback, source packages) | Bright Data and Apify keys | Mandatory sponsor requirement |
-| 4 | Ingestion pipeline: SERP discovery, Actor run and webhook, Claude extraction, validator, coverage records | WP1, WP3, Anthropic key | Real retrieval; label cached vs fresh |
+| 4 | Ingestion pipeline: SERP discovery, Actor run and webhook, rule-based extraction, validator, coverage records | WP1, WP3 | Real retrieval; label cached vs fresh |
 | 5 | Design in Figma, then frontend from the design: intake, discovery, program details, grade view, compare, dashboard, workspace, language planner, housing/immigration checklist | Figma route, WP1, WP2 | Use `docs/figma-plan.md` and `docs/design-delta.md` |
 | 6 | Counseling: round-robin assignment, messages, files and sharing, counselor views | WP1 | |
-| 7 | Claude advice layer with grounding checks and caps | WP1, WP2, Anthropic key | |
+| 7 | Template explanation layer (grounded in verified records) | WP1, WP2 | Claude API dropped 2026-10-24 |
 | 8 | Factory Droid worker with custom tools only | WP1, Factory key | Verify built-in tools are disabled |
 | 9 | Forge app and Convex-to-Forge events, Jira template, audit comments | WP6, Atlassian setup | |
 | 10 | Voice: Cartesia tokens, STT/TTS, transcript and fallbacks | WP5, Cartesia key | After the core flow works |

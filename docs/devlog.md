@@ -151,3 +151,8 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Rework, dead ends: Apify rejected the first build (input fields need descriptions); unit tests caught a URL de-duplication bug and text-cleaning bugs; `convex-test` cannot run two file-writing actions at once, so the replay test delivers notifications one after another.
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — Decision: no Claude API; rule-based extraction and template explanations
+- The user decided not to pay for the Claude API. Claude laid out the consequences (extraction, explanations and voice replies lose their AI step; the Anthropic track is not entered) and proposed deterministic extraction rules plus template explanations built from verified records; the user agreed.
+- Docs updated: spec (stack, diagram, ingestion steps, triggers, explanation contract, voice, checks, Appendix B row), sponsor requirements (BT-* and AN-* rewritten; AN-1/3/4 no longer apply), engineering detail, test/demo setup, readme-first, award evidence plan (Anthropic not entered; named community and interviews kept for Microsoft).
+- Possible later: Factory's own model could add AI extraction if a Factory account with credits becomes available.

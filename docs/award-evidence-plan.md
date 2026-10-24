@@ -54,13 +54,13 @@ Judging: meaningful use 30%, usefulness 25%, originality 25%, execution 20%.
 | Submission format | UNVERIFIED (sharing or export format not supplied). | User checks with sponsor |
 Claude's part: give the user a short list of what is worth capturing at each phase, such as research findings, flow sketches, decision points. Claude cannot create Notability notes directly. A Markdown export imported only at the end is not valid evidence.
 
-### Anthropic
+### Anthropic — not entered
+On 2026-10-24 the user decided not to use the Claude API (cost): extraction is rule-based code and explanations are templates built from verified records. The Anthropic track is not entered. The named community and interview evidence below are kept because the Microsoft track also needs them.
+
 | Deliverable | Detail | Owner |
 | --- | --- | --- |
 | Named community | Indonesian high school students applying to US/UK undergraduate programs (not "students" alone). | Claude |
 | Real problem evidence | Evidence from people actually affected, such as real conversations with students, parents or counselors. The user reports that interviews were done and the workflow is based on them (2026-10-24). | **User supplies the real details; Claude must not invent them.** Needed for the write-up: how many people, their roles (student, parent, counselor), when, how, and what they actually said or changed. No names or identifying details in public documents without their consent. |
-| Working product | End-to-end flow with meaningful Claude API calls. | Claude |
-| Claude's role | README explains Claude's runtime role, separate from Claude writing the code. | Claude |
 | Harms and failure modes | `docs/failure-modes.md`. | Claude |
 
 ### Bright Data
@@ -87,7 +87,7 @@ Claude's part: give the user a short list of what is worth capturing at each pha
 | Evidence | Schema documentation, access-control documentation, persistent data and meaningful backend operations shown in the demo. | Claude |
 
 ### Bitdeer AI Model Studio — not entered
-Bitdeer was dropped on 2026-10-24 (user decision): extraction uses Claude, and the project does not enter the Bitdeer track. No Bitdeer deliverables.
+Bitdeer was dropped on 2026-10-24 (user decision); extraction is rule-based (the Claude API was dropped too), and the project does not enter the Bitdeer track. No Bitdeer deliverables.
 
 ### Factory Droid SDK
 | Deliverable | Detail | Owner |
@@ -149,8 +149,8 @@ No Azure or separate Microsoft account is required by the supplied criteria.
 | --- | --- |
 | Setup | Figma Education verification started, credit claims, Notability and Mana accounts live, `devlog.md` begun |
 | Design | Notability sketches and decisions; Figma stage entries (ideation, prototyping) with real minutes |
-| Data pipeline | Bright Data call logs and screenshots; Apify Actor and run links; Claude source-to-record examples |
-| Core app | Convex schema and access docs; Claude interactions; failure cases |
+| Data pipeline | Bright Data call logs and screenshots; Apify Actor and run links; source-to-record examples from the rule-based extractor |
+| Core app | Convex schema and access docs; template explanations with their cited records; failure cases |
 | Agents | Factory run history; Forge/Jira action history |
 | Voice | Cartesia test results including Indonesian quality |
 | Handoff | Figma handoff and code-generation stage entries; Mana public pages and demo moment |
@@ -159,7 +159,7 @@ No Azure or separate Microsoft account is required by the supplied criteria.
 ## 7. Actions only the user can do
 
 1. Complete Figma Education verification and set files to "Anyone".
-2. Talk to real students, parents or counselors and record what they say (Anthropic, Microsoft).
+2. Talk to real students, parents or counselors and record what they say (Microsoft).
 3. Use Notability during development and Mana for real tasks, and share public Mana pages.
 4. Provide approximate minutes and 1–5 ratings for the stage log.
 5. Supply the hackathon rules link and check the UNVERIFIED items with the organizers.
