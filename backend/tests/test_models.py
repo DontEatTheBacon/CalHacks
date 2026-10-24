@@ -35,7 +35,7 @@ def test_steps_validate_against_their_own_type():
 
 
 def test_due_date_parses_iso_dates_and_rejects_free_text():
-    visa = {"type": "visa", "title": "t", "description": "d", "visa_type": "F-1", "documents": []}
+    visa = {"type": "visa", "title": "t", "description": "d", "visa_type": "F-1", "documents": [], "link": {"url": "https://example.gov"}}
     plan = models.Plan.model_validate({"school": "X", "steps": [{**visa, "due_date": "2027-06-01"}]})
     assert plan.steps[0].due_date == date(2027, 6, 1)
     assert plan.model_dump(mode="json")["steps"][0]["due_date"] == "2027-06-01"
@@ -50,10 +50,9 @@ def test_plans_need_at_least_one_plan():
 
 def test_minimal_plan_fills_optional_details_with_defaults():
     plan = models.Plan.model_validate({"school": "X", "steps": STEPS})
-    assert plan.fit_reason is None and plan.total_cost_usd_per_year is None
+    assert plan.fit_reason is None and plan.metrics is None
     for step in plan.steps:
         assert step.complete is False
-        assert step.link is None
 
 
 @pytest.mark.parametrize("model", list(MINIMAL_RESULTS), ids=lambda m: m.__name__)
@@ -67,10 +66,38 @@ def test_every_tool_result_model_has_a_minimal_sample():
     assert {tool.result for tool in agent.TOOLS.values()} <= set(MINIMAL_RESULTS)
 
 
-@pytest.mark.parametrize("model", list(MINIMAL_RESULTS), ids=lambda m: m.__name__)
-def test_links_are_optional(model):
-    if "link" in model.model_fields:
-        assert not model.model_fields["link"].is_required()
+# Anything with a cost, plus scholarships and applications, must link to the page stating it.
+LINKED_RESULTS = {tm.VisaRequirements, tm.TravelInfo, tm.FlightInfo, tm.Scholarship, tm.HousingInfo,
+                  tm.ApplicationDeadlines, tm.UniversityCost, tm.InsuranceRequirements, tm.CourseTransfer}
+LINKED_STEPS = {"visa", "travel", "scholarship", "housing", "application", "cost", "insurance"}
+
+
+def test_cost_scholarship_and_application_results_require_links():
+    for model in set(MINIMAL_RESULTS) | {tm.Scholarship, tm.TravelInfo}:  # including the models nested in lists
+        if "link" in model.model_fields:
+            assert model.model_fields["link"].is_required() == (model in LINKED_RESULTS), model.__name__
+
+
+def test_cost_scholarship_and_application_steps_require_links():
+    for cls in step_classes():
+        step_type = typing.get_args(cls.model_fields["type"].annotation)[0]
+        assert cls.model_fields["link"].is_required() == (step_type in LINKED_STEPS), step_type
+
+
+def test_plan_metrics_totals_are_calculated():
+    metrics = models.PlanMetrics(match_rate=87, program_years=2, cost_per_year_usd=52000, work_pay_per_year_usd=12000)
+    assert (metrics.total_cost_usd, metrics.total_work_pay_usd) == (104000, 24000)
+    # Totals from Gemini are ignored, and they aren't in the schema it's asked to fill.
+    assert models.PlanMetrics.model_validate({**metrics.model_dump(), "total_cost_usd": 1}).total_cost_usd == 104000
+    assert "total_cost_usd" not in models.PlanMetrics.model_json_schema()["properties"]
+    assert models.Plan(school="X", steps=[], metrics=metrics).model_dump()["metrics"]["total_work_pay_usd"] == 24000
+
+
+@pytest.mark.parametrize("bad", [{"match_rate": 101}, {"match_rate": -1}, {"program_years": 0}, {"cost_per_year_usd": -5}])
+def test_plan_metrics_reject_impossible_values(bad):
+    good = {"match_rate": 80, "program_years": 2, "cost_per_year_usd": 50000, "work_pay_per_year_usd": 10000}
+    with pytest.raises(ValidationError):
+        models.PlanMetrics.model_validate({**good, **bad})
 
 
 def test_resource_link_label_is_optional():

@@ -25,7 +25,7 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(autouse=True)
 def no_network(request, monkeypatch):
-    """Non-live tests fail loudly if they reach Gemini, Scorecard or Google Maps."""
+    """Non-live tests fail loudly if they reach Gemini or Scorecard."""
     if request.node.get_closest_marker("live"):
         return
 
@@ -35,7 +35,7 @@ def no_network(request, monkeypatch):
     monkeypatch.setattr(agent.client.models, "generate_content", blocked)
     monkeypatch.setattr(httpx, "get", blocked)
     monkeypatch.setattr(httpx, "post", blocked)
-    monkeypatch.delenv("GOOGLE_MAPS_API_KEY", raising=False)
+    monkeypatch.setattr(agent, "_resume_at", 0.0)  # no 429 cooldown carried between tests
 
 
 @pytest.fixture

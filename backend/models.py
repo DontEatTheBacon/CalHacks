@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Annotated, Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, computed_field, model_validator
 from sqlmodel import SQLModel
 
 from tool_models import ResourceLink
@@ -22,7 +22,7 @@ class Profile(SQLModel):
 
 # Timeline steps: each type has the shared fields plus its own key details.
 class StepBase(SQLModel):
-    complete: bool = False
+    complete: bool = Field(default=False, description="Whether the student has finished this step; always false in a new plan")
     title: str
     description: str = Field(description="What the student should do, in one or two sentences")
     link: ResourceLink | None = Field(default=None, description="The link from the matching tool result, if any")
@@ -42,6 +42,7 @@ class VisaStep(DatedStep):
     type: Literal["visa"]
     visa_type: str
     documents: list[str]
+    link: ResourceLink = Field(description="Official page listing the visa's requirements and fees")
     fee_usd: int | None = Field(default=None, description="Visa and related fees")
 
 
@@ -49,6 +50,7 @@ class TravelStep(DatedStep):
     type: Literal["travel"]
     arrival_airport: str
     flight_cost_usd: int | None
+    link: ResourceLink = Field(description="Page showing fares for this trip")
     departure_airport: str | None = Field(default=None, description="Airport the student leaves from")
     route: list[str] = Field(default=[], description="Ground legs from the airport to campus, e.g. 'MARTA Red Line to North Avenue'")
 
@@ -57,6 +59,7 @@ class ScholarshipStep(DatedStep):
     type: Literal["scholarship"]
     scholarship: str
     amount_usd: int | None
+    link: ResourceLink = Field(description="The scholarship's own application or information page")
     eligibility: str | None = Field(default=None, description="Who can apply, in one sentence")
 
 
@@ -64,6 +67,7 @@ class HousingStep(DatedStep):
     type: Literal["housing"]
     option: str = Field(description="e.g. 'On-campus residence'")
     monthly_cost_usd: int | None
+    link: ResourceLink = Field(description="The college's page listing housing costs")
     deposit_usd: int | None = Field(default=None, description="Housing deposit")
 
 
@@ -78,12 +82,14 @@ class ApplicationStep(DatedStep):
     type: Literal["application"]
     round: str
     application_fee_usd: int | None
+    link: ResourceLink = Field(description="The college's application page")
     required_documents: list[str] = Field(default=[], description="Documents to submit with the application")
 
 
 class CostStep(DatedStep):
     type: Literal["cost"]
     amount_usd: int = Field(description="Amount to pay or show as funds")
+    link: ResourceLink = Field(description="The page listing these costs")
     tuition_usd: int | None = Field(default=None, description="Tuition part of the amount")
     living_usd: int | None = Field(default=None, description="Living-cost part of the amount")
 
@@ -92,6 +98,7 @@ class InsuranceStep(DatedStep):
     type: Literal["insurance"]
     plan: str
     annual_cost_usd: int | None
+    link: ResourceLink = Field(description="The college's page listing the insurance plan and its cost")
     waiver_allowed: bool | None = Field(default=None, description="Whether outside insurance can replace the school plan")
 
 
@@ -111,6 +118,8 @@ class WorkStep(StepBase):
     type: Literal["work"]
     permit: str = Field(description="e.g. 'OPT'")
     hours_per_week: int | None
+    hourly_pay_usd: float = Field(description="Typical hourly pay for on-campus jobs")
+    post_study_salary_usd: int | None = Field(default=None, description="Typical starting salary per year for this major after graduating")
     post_study_duration: str | None = Field(default=None, description="How long the student can work after graduating")
 
 
@@ -127,11 +136,30 @@ STEP_ORDER = [
 ]
 
 
+class PlanMetrics(SQLModel):
+    match_rate: int = Field(ge=0, le=100, description="How well this college fits the student's grades, budget and goals, from 0 to 100")
+    program_years: float = Field(gt=0, description="Length of the program in years")
+    cost_per_year_usd: int = Field(ge=0, description="Tuition plus living costs per year")
+    work_pay_per_year_usd: int = Field(ge=0, description="Expected pay per year from allowed part-time work while studying")
+    post_study_salary_usd: int | None = Field(default=None, description="Typical starting salary per year for this major after graduating")
+
+    # Totals are calculated rather than asked for, so they always match the yearly figures.
+    @computed_field
+    @property
+    def total_cost_usd(self) -> int:
+        return round(self.cost_per_year_usd * self.program_years)
+
+    @computed_field
+    @property
+    def total_work_pay_usd(self) -> int:
+        return round(self.work_pay_per_year_usd * self.program_years)
+
+
 class Plan(SQLModel):
     school: str
     steps: list[Step]
     fit_reason: str | None = Field(default=None, description="Why this college fits the student, in one sentence")
-    total_cost_usd_per_year: int | None = Field(default=None, description="Tuition plus living costs per year")
+    metrics: PlanMetrics | None = Field(default=None, description="Summary numbers for this plan; always fill these in")
 
     @model_validator(mode="after")
     def order_steps(self):

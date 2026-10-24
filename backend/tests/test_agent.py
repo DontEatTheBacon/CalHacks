@@ -1,5 +1,3 @@
-import threading
-import time
 from datetime import date
 
 import pytest
@@ -18,14 +16,11 @@ def housing(college):
 
 @pytest.fixture
 def fake_tools(monkeypatch):
-    """Replaces run_tool; slower for earlier calls so results finish out of order."""
-    runs, lock = [], threading.Lock()
+    """Replaces run_tool and records each call in the order it ran."""
+    runs = []
 
     def fake_run_tool(name, args):
-        with lock:
-            runs.append((name, args))
-            delay = 0.05 * (5 - len(runs))
-        time.sleep(max(delay, 0))
+        runs.append((name, args))
         return {"tool": name, "college": args.get("college")}
 
     monkeypatch.setattr(agent, "run_tool", fake_run_tool)
@@ -40,10 +35,13 @@ def test_streams_calls_results_and_plans_with_matching_ids(scripted_gemini, fake
     ]
     events = list(agent.agent_events({"gpa": "8.5"}))
 
-    calls = [e for e in events if isinstance(e, models.ToolCallEvent)]
-    results = [e for e in events if isinstance(e, models.ToolResultEvent)]
-    assert [c.id for c in calls] == [0, 1, 2]
-    assert {r.id: r.name for r in results} == {c.id: c.name for c in calls}
+    # Each tool runs to completion, in Gemini's order, before the next one starts.
+    assert [(e.type, e.id, e.name) for e in events[:-1]] == [
+        ("tool_call", 0, "get_visa_requirements"), ("tool_result", 0, "get_visa_requirements"),
+        ("tool_call", 1, "get_housing_options"), ("tool_result", 1, "get_housing_options"),
+        ("tool_call", 2, "get_housing_options"), ("tool_result", 2, "get_housing_options"),
+    ]
+    assert [args.get("college") for _, args in fake_tools] == [None, "Purdue University", "MIT"]
     assert isinstance(events[-1], models.PlansEvent)
     assert [p.school for p in events[-1].plans] == ["Purdue University", "MIT"]
     assert len(fake_tools) == 3

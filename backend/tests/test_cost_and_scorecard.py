@@ -78,7 +78,10 @@ def no_gemini(prompt, schema):
 
 
 def gemini_estimate(tuition=40000, living=15000, fees=1200):
-    return lambda prompt, schema: tm.UniversityCost(tuition_usd_per_year=tuition, living_usd_per_year=living, fees_usd_per_year=fees)
+    return lambda prompt, schema: tm.UniversityCost(
+        tuition_usd_per_year=tuition, living_usd_per_year=living, fees_usd_per_year=fees,
+        link=tm.ResourceLink(url="https://example.edu/costs"),
+    )
 
 
 def test_undergraduate_cost_comes_only_from_scorecard(monkeypatch):

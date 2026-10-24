@@ -14,6 +14,13 @@ class CountryArgs(SQLModel):
     study_country: str = Field(description="Country the student will study in")
 
 
+class WorkArgs(SQLModel):
+    citizenship: str = Field(description="Country the student is a citizen of")
+    study_country: str = Field(description="Country the student will study in")
+    college: str = Field(description="College the student will attend")
+    major: str = Field(description="The student's major")
+
+
 class CollegeArgs(SQLModel):
     college: str = Field(description="College the student will attend")
 
@@ -69,17 +76,23 @@ class VisaRequirements(SQLModel):
     financial_proof_usd: int | None = Field(default=None, description="Funds the student must show for the first year")
     earliest_application: str | None = Field(default=None, description="How early the student can apply, e.g. '365 days before the program starts'")
     earliest_entry: str | None = Field(default=None, description="How early the student can enter the country, e.g. '30 days before the program starts'")
-    link: ResourceLink | None = Field(default=None, description="Official visa application or information page")
+    link: ResourceLink = Field(description="Official page listing this visa's requirements and fees")
 
 
 class TravelInfo(SQLModel):
+    name: str | None = Field(default=None, description="Short name for this way of getting there, e.g. 'MARTA train' or 'Taxi'")
     banned_travel_forms: list[str] = Field(description="List of any banned forms of transportation which may be a result of country laws or air laws etc")
     travel_forms: list[str] = Field(description="List of the forms of transportation in order eg train, car, plane if applicable")
     travel_duration: list[float] = Field(description="List of the amount of time of each form of transportation")
     travel_destinations: list[str] = Field(description="List of the travel locations in order")
+    link: ResourceLink = Field(description="Page with this option's fares, e.g. the transit agency's fare page or the airport's ground transport page")
     line_names: list[str | None] = Field(default=[], description="Transit line for each leg in order, e.g. 'MARTA Red Line', or null for walking or driving")
     fare_usd: float | None = Field(default=None, description="Total public transport fare for the route")
-    source: str | None = Field(default=None, description="Where the route came from, e.g. 'Google Maps' or 'Gemini estimate'")
+    source: str | None = Field(default=None, description="Where the route came from, e.g. 'Gemini estimate'")
+
+
+class RouteOptions(SQLModel):
+    routes: list[TravelInfo] = Field(description="Different ways to get there, e.g. public transport, taxi or rideshare, airport shuttle; fastest first")
 
 
 class FlightInfo(SQLModel):
@@ -90,7 +103,7 @@ class FlightInfo(SQLModel):
     typical_cost_usd: int | None = Field(default=None, description="Typical one-way economy fare")
     airlines: list[str] = Field(default=[], description="Airlines that commonly fly this route")
     baggage_allowance: str | None = Field(default=None, description="Typical checked baggage allowance, e.g. '2 x 23 kg'")
-    link: ResourceLink | None = Field(default=None, description="Arrival airport's page for international arrivals")
+    link: ResourceLink = Field(description="Page showing fares for this route, e.g. a Google Flights search")
 
 # probably add some form that is generated based on the requirements 
 class Scholarship(SQLModel):
@@ -98,7 +111,7 @@ class Scholarship(SQLModel):
     amount_usd: int | None = Field(description="Award per year, if known")
     eligibility: str = Field(description="Who can apply, in one sentence")
     due_date: date | None = Field(description="Application deadline as YYYY-MM-DD, or null if unknown")
-    link: ResourceLink | None = Field(default=None, description="Scholarship application or information page")
+    link: ResourceLink = Field(description="The scholarship's own application or information page, stating the award amount")
     award_type: Literal["merit", "need", "merit_and_need", "other"] | None = Field(default=None, description="What the award is based on")
     renewable: bool | None = Field(default=None, description="Whether the award renews each year")
     required_documents: list[str] = Field(default=[], description="Documents the application needs, e.g. essay, recommendation letters")
@@ -116,7 +129,7 @@ class HousingInfo(SQLModel):
     application_deadline: date | None = Field(default=None, description="Housing application deadline as YYYY-MM-DD, or null if unknown")
     deposit_usd: int | None = Field(default=None, description="Deposit due when applying or accepting housing")
     meal_plan_required: bool | None = Field(default=None, description="Whether on-campus residents must buy a meal plan")
-    link: ResourceLink | None = Field(default=None, description="The college's housing page")
+    link: ResourceLink = Field(description="The college's page listing these housing costs")
 
 
 class TestScore(SQLModel):
@@ -142,7 +155,7 @@ class ApplicationDeadlines(SQLModel):
     application_fee_usd: int | None
     required_documents: list[str] = Field(default=[], description="Documents to submit, e.g. transcripts, statement of purpose, recommendation letters")
     decision_date: date | None = Field(default=None, description="When decisions are usually released, as YYYY-MM-DD, or null if unknown")
-    link: ResourceLink | None = Field(default=None, description="The college's application portal or deadlines page")
+    link: ResourceLink = Field(description="The college's application page listing these deadlines and the fee")
 
 
 class UniversityCost(SQLModel):
@@ -152,7 +165,7 @@ class UniversityCost(SQLModel):
     books_usd_per_year: int | None = Field(default=None, description="Books and supplies")
     fees_usd_per_year: int | None = Field(default=None, description="Mandatory fees not included in tuition")
     source: str | None = Field(default=None, description="Where the figures came from, e.g. 'College Scorecard' or 'Gemini estimate'")
-    link: ResourceLink | None = Field(default=None, description="Official cost of attendance page")
+    link: ResourceLink = Field(description="The page listing these costs, e.g. the college's cost of attendance page")
 
 
 class InsuranceRequirements(SQLModel):
@@ -161,7 +174,7 @@ class InsuranceRequirements(SQLModel):
     waiver_allowed: bool = Field(description="Whether outside insurance can replace the school plan")
     waiver_deadline: date | None = Field(default=None, description="Deadline to waive the school plan as YYYY-MM-DD, or null if unknown")
     minimum_coverage: str | None = Field(default=None, description="Coverage outside insurance must meet to waive the school plan")
-    link: ResourceLink | None = Field(default=None, description="The college's student health insurance page")
+    link: ResourceLink = Field(description="The college's page listing the insurance plan and its cost")
 
 
 class TestRequirements(SQLModel):
@@ -177,13 +190,15 @@ class CourseTransfer(SQLModel):
     evaluation_required: str | None = Field(description="Credential evaluation needed, e.g. 'WES course-by-course'")
     evaluation_services: list[str] = Field(default=[], description="Accepted evaluation services, e.g. 'WES', 'ECE'")
     evaluation_cost_usd: int | None = Field(default=None, description="Typical cost of the credential evaluation")
-    link: ResourceLink | None = Field(default=None, description="The college's transfer credit page")
+    link: ResourceLink = Field(description="Page about transfer credit or the credential evaluation and its cost")
 
 
 class WorkOptions(SQLModel):
     on_campus_hours_per_week: int | None = Field(description="Hours allowed during term")
     post_study_work: str = Field(description="Post-study work permit, e.g. 'OPT'")
     post_study_duration: str = Field(description="How long the student can work after graduating")
+    on_campus_hourly_pay_usd: float = Field(description="Typical hourly pay for on-campus student jobs at the college")
+    post_study_salary_usd: int = Field(description="Typical starting salary per year for this major after graduating")
     off_campus_allowed: bool | None = Field(default=None, description="Whether off-campus work is allowed during studies, e.g. through CPT")
     stem_extension: str | None = Field(default=None, description="Extra post-study work time for STEM graduates, if any")
     link: ResourceLink | None = Field(default=None, description="Official page on student work rights")
