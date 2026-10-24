@@ -1,0 +1,310 @@
+:root {
+  --bg: #fbfaf8;
+  --text: #1d1d1b;
+  --muted: #6e6c66;
+  --line: #e4e1da;
+  --field: #ffffff;
+  --danger: #b42318;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615;
+    --text: #e9e7e2;
+    --muted: #9b988f;
+    --line: #2e2d2a;
+    --field: #1d1d1b;
+    --danger: #f97066;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.app {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 56px 20px 96px;
+}
+
+.app > * + * {
+  margin-top: 48px;
+}
+
+/* Header */
+.app-header h1 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.app-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Profile form */
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px 20px;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.field-input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--field);
+  color: var(--text);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
+.submit-button {
+  justify-self: start;
+  align-self: end;
+  font: inherit;
+  font-weight: 500;
+  padding: 9px 18px;
+  border: 1px solid var(--text);
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Agent activity */
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.activity-item {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.activity-item p {
+  margin: 0;
+}
+
+.activity-item {
+  animation: fade-in 0.25s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* The status marker: an ellipsis while running, a tick when done, a cross on failure. */
+.activity-dot::before {
+  color: var(--muted);
+  content: '·';
+}
+
+.activity-item--done .activity-dot::before {
+  color: var(--text);
+  content: '✓';
+}
+
+.activity-item--failed .activity-dot::before {
+  color: var(--danger);
+  content: '✕';
+}
+
+.activity-label {
+  font-weight: 500;
+}
+
+.activity-item--pending .activity-label,
+.activity-item--thinking .activity-label {
+  color: var(--muted);
+}
+
+.activity-item--pending .activity-label::after {
+  content: '…';
+}
+
+.activity-summary {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* Error */
+.error {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 2px solid var(--danger);
+  color: var(--danger);
+}
+
+/* Timeline */
+.timeline-eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.timeline-school {
+  margin: 2px 0 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.timeline-empty {
+  color: var(--muted);
+}
+
+.timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: step;
+  border-top: 1px solid var(--line);
+}
+
+.step {
+  counter-increment: step;
+  position: relative;
+  padding: 18px 0 18px 32px;
+  border-bottom: 1px solid var(--line);
+}
+
+.step::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 18px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.step-title {
+  margin: 2px 0 4px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.step-description {
+  margin: 0;
+}
+
+.step-facts {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.step-fact {
+  display: inline;
+}
+
+.step-fact + .step-fact::before {
+  content: ' · ';
+}
+
+/* Plan navigation */
+.plans-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.plans-arrow {
+  font: inherit;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--field);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.plans-arrow:hover:not(:disabled) {
+  border-color: var(--text);
+}
+
+.plans-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.plans-count {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Resource links */
+.step-link,
+.activity-link {
+  display: inline-block;
+  color: var(--text);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+
+.step-link {
+  margin-top: 6px;
+}
+
+.step-link:hover,
+.activity-link:hover {
+  text-decoration-color: var(--text);
+}

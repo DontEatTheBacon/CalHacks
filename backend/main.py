@@ -7,11 +7,11 @@ from pydantic import ValidationError
 load_dotenv()
 
 from agent import agent_events, run_agent  # noqa: E402
-from models import ErrorEvent, Plan, Profile  # noqa: E402
+from models import ErrorEvent, Plans, Profile  # noqa: E402
 
 app = FastAPI()
 
-@app.post("/api/plan", response_model=Plan)
+@app.post("/api/plan", response_model=Plans)
 def plan(profile: Profile):
     try:
         return run_agent(profile.model_dump())

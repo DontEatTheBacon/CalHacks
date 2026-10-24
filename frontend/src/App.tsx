@@ -1,31 +1,52 @@
 import { useState, type FormEvent } from 'react'
-import type { AgentEvent, Plan, Profile, ToolCallEvent, ToolResultEvent } from './types'
+import { ActivityFeed, type ToolActivity } from './Activity'
+import { PlanBrowser } from './Timeline'
+import type { AgentEvent, Plan, Profile } from './types'
+import './App.css'
 
 // Test data, prefilled so the form can be submitted as-is.
 const TEST_PROFILE: Profile = {
   gpa: '8.5',
   from_school: 'Indian Institute of Technology Bombay',
-  from_location: 'Mumbai, India',
+  citizenship: 'India',
+  level: 'graduate',
+  major: 'Computer Science',
+  start_term: 'February 2027',
+  budget_usd_per_year: 45000,
+}
+
+const FIELD_LABELS: Record<keyof Profile, string> = {
+  gpa: 'GPA',
+  from_school: 'Current school',
+  citizenship: 'Citizenship',
+  level: 'Degree level',
+  major: 'Major',
+  start_term: 'Start term',
+  budget_usd_per_year: 'Budget (USD per year)',
 }
 
 export default function App() {
-  const [toolLog, setToolLog] = useState<(ToolCallEvent | ToolResultEvent)[]>([])
-  const [plan, setPlan] = useState<Plan | null>(null)
+  const [activity, setActivity] = useState<ToolActivity[]>([])
+  const [plans, setPlans] = useState<Plan[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   function handleEvent(event: AgentEvent) {
-    if (event.type === 'plan') setPlan(event.plan)
+    if (event.type === 'plans') setPlans(event.plans)
     else if (event.type === 'error') setError(event.detail)
-    else setToolLog((log) => [...log, event])
+    else if (event.type === 'tool_call') setActivity((items) => [...items, { id: event.id, name: event.name }])
+    else {
+      // Resolve the call with the same id.
+      setActivity((items) => items.map((item) => (item.id === event.id ? { ...item, result: event.result } : item)))
+    }
   }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const profile = Object.fromEntries(new FormData(e.currentTarget)) as unknown as Profile
     setLoading(true)
-    setToolLog([])
-    setPlan(null)
+    setActivity([])
+    setPlans(null)
     setError(null)
     try {
       const res = await fetch('/api/plan/stream', {
@@ -52,7 +73,7 @@ export default function App() {
         for (const line of lines) {
           if (!line) continue
           const event = JSON.parse(line) as AgentEvent
-          if (event.type === 'plan' || event.type === 'error') finished = true
+          if (event.type === 'plans' || event.type === 'error') finished = true
           handleEvent(event)
         }
       }
@@ -65,54 +86,46 @@ export default function App() {
   }
 
   return (
-    <div>
-      <h1>Student Profile</h1>
-      <form onSubmit={onSubmit}>
-        {Object.entries(TEST_PROFILE).map(([name, value]) => (
-          <p key={name}>
-            <label>{name}: <input name={name} defaultValue={value} required /></label>
-          </p>
+    <main className="app">
+      <header className="app-header">
+        <h1>Study abroad planner</h1>
+        <p>Tell us about yourself and we'll research your move and build a step-by-step timeline.</p>
+      </header>
+
+      <form className="profile-form" onSubmit={onSubmit}>
+        {(Object.keys(TEST_PROFILE) as (keyof Profile)[]).map((name) => (
+          <label key={name} className="field">
+            <span className="field-label">{FIELD_LABELS[name]}</span>
+            {name === 'level' ? (
+              <select name={name} defaultValue={TEST_PROFILE[name]} className="field-input">
+                <option value="undergraduate">Undergraduate</option>
+                <option value="graduate">Graduate</option>
+              </select>
+            ) : (
+              <input
+                name={name}
+                defaultValue={TEST_PROFILE[name]}
+                type={name === 'budget_usd_per_year' ? 'number' : 'text'}
+                className="field-input"
+                required
+              />
+            )}
+          </label>
         ))}
-        <button type="submit" disabled={loading}>Submit</button>
+        <button type="submit" className="submit-button" disabled={loading}>
+          {loading ? 'Building your plan…' : 'Build my plan'}
+        </button>
       </form>
 
-      {(loading || toolLog.length > 0) && (
-        <section>
-          <h2>Agent activity</h2>
-          <ul>
-            {toolLog.map((event, i) => (
-              <li key={i}>
-                {event.type === 'tool_call' ? (
-                  <>Calling <code>{event.name}</code> with <code>{JSON.stringify(event.args)}</code></>
-                ) : (
-                  <>Result from <code>{event.name}</code>: <pre>{JSON.stringify(event.result, null, 2)}</pre></>
-                )}
-              </li>
-            ))}
-            {loading && <li>Thinking...</li>}
-          </ul>
-        </section>
+      {loading && !plans && <ActivityFeed activity={activity} />}
+
+      {error && (
+        <p className="error" role="alert">
+          Something went wrong: {error}
+        </p>
       )}
 
-      {error && <p>Error: {error}</p>}
-
-      {plan && (
-        <section>
-          <h2>Best fit: {plan.school}</h2>
-          <ol>
-            {plan.steps.map((step, i) => (
-              <li key={i}>
-                <h3>{step.title}</h3>
-                <p>
-                  <strong>{step.category}</strong>
-                  {step.deadline && <> · Due {step.deadline}</>}
-                </p>
-                <p>{step.description}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-    </div>
+      {plans && <PlanBrowser key={plans.map((plan) => plan.school).join('|')} plans={plans} />}
+    </main>
   )
 }
