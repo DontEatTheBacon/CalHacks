@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "types": []
   },
   "include": ["convex/lib/**/*.ts", "tests/**/*.ts", "config/*.json"]

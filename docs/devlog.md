@@ -82,3 +82,18 @@ Rule for this file: record only what actually happened, with the real date it wa
 - When and how the original six spec documents and the HTML mockup were created, and with which tools.
 - Any real conversations with students or counselors.
 - Any Notability use, Mana use, and Figma progress
+
+### 2026-10-24 — Build start: repository, config, rules (Claude Code, cloud session)
+- Stage: code generation.
+- Tools used and why: Claude Code in a cloud session; Node's built-in test runner because the npm registry is blocked in this session.
+- What was done:
+  - Found that `DontEatTheBacon/CalHacks` already held Andrew Valentine's first prototype (FastAPI + Gemini + Vite). The user chose to rebuild on the spec stack and reuse its good parts. Moved it to `legacy/` on a new `langkah` branch; `main` untouched. Andrew pushed again at 11:15 (Claude agent restored), which was pulled into `legacy/`.
+  - Copied the project documents into `docs/` (the private key file was deliberately left out). Added `.gitignore` rules for secrets.
+  - Wrote `config/` (ranking, setting, climate, taxonomy, retention, limits, domains, planning). Climate rules changed from text expressions to structured fields so code reads them deterministically.
+  - Wrote the deterministic rules in `convex/lib/rules/` (major relevance, setting, climate, grade comparison, cost and budget band, hard filters and ranking, deadline risk and back-planning, round robin, domain allowlist) and 27 tests mapped to acceptance scenarios 1–12 and 16. All pass.
+  - Terms check: Open-Meteo free API is non-commercial only, data CC BY 4.0 (attribution in the footer); Frankfurter software is MIT and rates fall under each provider's terms (ECB disclaimer). Both acceptable for the prototype.
+- Rework, dead ends: one test assumed the wrong New York date on the day US daylight saving ends; the test was fixed, not the code. Pushing from this session is refused (no GitHub write access); the branch is handed over as a git bundle for the user to push from the MacBook.
+- Blockers: npm registry blocked here (Next.js, Convex and others cannot be installed until package managers are allowed in claude.ai Settings → Capabilities); GitHub push access.
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):
+- How the output reached the project: commits on the `langkah` branch.
