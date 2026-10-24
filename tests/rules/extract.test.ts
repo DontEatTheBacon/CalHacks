@@ -96,3 +96,25 @@ test("vertical tables: headers and amounts on separate lines are matched by posi
   assert.equal(cs[1]!.academicYear, "2027/28");
   assert.equal(cs[1]!.period, "annual");
 });
+
+test("coverage review fixes: loans are not costs, 'due to' is not a deadline, past dates and range starts need confirmation", () => {
+  const loan = costs(extract(["Tuition fees for international students", "You can take out a tuition loan which you don’t have to start repaying until you are earning more than £25,000 a year."].join("\n")));
+  assert.ok(loan.every((c) => c.status === "needs_confirmation"));
+  const dates = extract([
+    "Since 1 August 2021, new criteria apply to students who would have previously been eligible for Home (UK) fee status due to the UK’s membership of the European Union.",
+    "The final deadline for international student applications is 30 June 2026.",
+    "Apply between 1 September 2026 and 13 January 2027 to be guaranteed equal consideration with other applicants.",
+    "Test scores are optional for students applying for the spring 2028 term, with an application deadline of October 1, 2027.",
+  ].join("\n"), "2026-10-24").filter((c) => c.kind === "milestone");
+  const byDate = Object.fromEntries(dates.map((d) => [d.kind === "milestone" ? d.dateStart : "", d]));
+  assert.equal(byDate["2021-08-01"], undefined, "'due to' must not create a deadline");
+  assert.equal(byDate["2026-06-30"]!.status, "needs_confirmation");
+  assert.equal(byDate["2026-09-01"]!.status, "needs_confirmation");
+  assert.equal(byDate["2027-01-13"]!.status, "ready");
+  assert.equal(byDate["2027-10-01"]!.status, "needs_confirmation");
+});
+
+test("course extras are not living costs; large amounts labelled only 'fee' need confirmation", () => {
+  const cs = costs(extract(["Fees for overseas students", "You will need to budget at least £100 for the cost of photocopying, printing and binding each year.", "Fees", "£49,300 per year"].join("\n")));
+  assert.ok(cs.every((c) => c.status === "needs_confirmation"), JSON.stringify(cs.map((c) => [c.amount, c.reasons])));
+});

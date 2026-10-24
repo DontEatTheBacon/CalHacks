@@ -3,7 +3,7 @@
 // is "ready" only when nothing about it has to be guessed; otherwise it is "needs_confirmation" with
 // the reasons. Page text is data: nothing in it changes what these rules do.
 
-export const RULES_VERSION = "rules-2026-10-24.4";
+export const RULES_VERSION = "rules-2026-10-24.6";
 
 export type Category = "international" | "out_of_state" | "domestic" | "unknown";
 export type ItemType = "tuition" | "mandatory_fee" | "living_estimate" | "housing_estimate";
@@ -41,7 +41,7 @@ function category(text: string | null | undefined): Category {
 
 function itemType(text: string): ItemType | null {
   const t = text.toLowerCase();
-  if (/\btotal\b|cost of attendance|saving|differential|discount|scholarship|waiver|reduction|deposit|after aid|average|net price|median/.test(t)) return null;
+  if (/\btotal\b|cost of attendance|saving|differential|discount|scholarship|waiver|reduction|deposit|after aid|average|net price|median|loan|repay|earning|salary|income|threshold|worth|award/.test(t)) return null;
   if (/housing|accommodation|residence hall|room\b/.test(t)) return "housing_estimate";
   if (/meal|food|living|personal|books|transport|miscellaneous/.test(t)) return "living_estimate";
   if (/tuition|course fee|annual fee|\bband \d/.test(t)) return "tuition";
@@ -113,6 +113,7 @@ function nearbyHeadings(lines: string[], i: number, n = 12): string[] {
 
 
 const NOT_STANDARD = /placement|study abroad|exchange|foundation|pre-?sessional|part[- ]time|postgraduate|master['’]?s|\bphd\b|research|per credit|summer|online/i;
+const EXTRA = /printing|photocopying|stationery|equipment|field ?trips?|trips? and visits|binding|subscription|graduation/i;
 const STANDARD = /tuition|fees for (overseas|international)|\bband \d|undergraduate/i;
 /** Generic table column headers carry no scope. */
 const COLUMN_HEADER = /^(course|courses|annual fee|fees?|amount|cost|type of placement|programme|program|subject|level)$/i;
@@ -178,7 +179,7 @@ function costs(lines: string[]): CostCandidate[] {
     const vertical = verticalHeader(lines, i);
     const label = vertical ?? (pipe ? pipe[0]! : before.length > 2 ? before : i > 0 && !money(lines[i - 1]!).length ? lines[i - 1]! : null);
 
-    const isTotal = /\btotal\b|cost of attendance|saving|differential|discount|scholarship|waiver|reduction|deposit|after aid|average|net price|median/i.test(`${label ?? ""} ${line}`);
+    const isTotal = /\btotal\b|cost of attendance|saving|differential|discount|scholarship|waiver|reduction|deposit|after aid|average|net price|median|loan|repay|earning|salary|income|threshold|worth|award/i.test(`${label ?? ""} ${line}`);
     // Nearest heading that states a cost type / period; the row itself wins over headings.
     const typeFromHeadings = headings.map(itemType).find(Boolean) ?? null;
     const periodFromHeadings = headings.map(period).find((p) => p !== "unknown") ?? "unknown";
@@ -188,14 +189,16 @@ function costs(lines: string[]): CostCandidate[] {
       const header = pipe && headers ? headers[pipe.findIndex((c) => c.includes(m.raw.trim()))] ?? null : null;
       const cat = [header, label].map(category).find((c) => c !== "unknown") ?? section.cat;
       const ctx = [label ?? "", header ?? "", ...headings, line].join(" \n ");
-      const type = isTotal ? null : itemType([label ?? "", line].join(" ")) ?? typeFromHeadings;
+      // A row that is a course extra (printing, trips…) never inherits a cost type from its heading.
+      const type = isTotal || EXTRA.test(`${label ?? ""} ${line}`) ? null : itemType([label ?? "", line].join(" ")) ?? typeFromHeadings;
       const ownPeriod = period([line, label ?? "", header ?? ""].join(" "));
       const per = ownPeriod !== "unknown" ? ownPeriod : periodFromHeadings;
       if (special) reasons.push(`listed under "${special.slice(0, 60)}", not standard first-year undergraduate tuition`);
       if (cat === "unknown") reasons.push("page does not say whether this applies to international students");
       if (cat === "domestic") reasons.push("applies to home or in-state students, not international applicants");
       if (cat === "out_of_state") reasons.push("US out-of-state rate; the page does not say international students pay it");
-      if (!type) reasons.push(isTotal ? "total, saving or discount row, not a single cost item" : "cost type unclear");
+      if (!type) reasons.push(isTotal ? "total, saving, discount, loan or salary figure, not a single cost item" : "cost type unclear or a course extra");
+      if (type === "mandatory_fee" && m.amount >= 5000) reasons.push("large amount labelled only as a fee; it may be tuition for some courses");
       if (per === "unknown") reasons.push(/per credit|credit hour/i.test(`${line} ${label ?? ""} ${headings[0] ?? ""}`) ? "priced per credit; needs a credit count" : "period (per year, term or total) not stated");
       if (pipe && !headers && found.length > 1) reasons.push("table columns could not be matched to headers");
       out.push({
@@ -267,11 +270,11 @@ function gradePolicy(lines: string[]): GradeCandidate[] {
 
 const MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec";
 const DATE = new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MONTHS})\\.?(?:,?\\s+(20\\d\\d))?\\b|\\b(${MONTHS})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(20\\d\\d))?\\b`, "gi");
-const DEADLINE = /\b(deadline|due|apply by|applications? (close|closes|must be (received|submitted))|closing date|submit(ted)? by|no later than|priority date|early action|early decision|regular decision|restrictive early action|equal consideration)\b/i;
+const DEADLINE = /\b(deadline|due(?! to\b)|apply by|applications? (close|closes|must be (received|submitted))|closing date|submit(ted)? by|no later than|priority date|early action|early decision|regular decision|restrictive early action|equal consideration)\b/i;
 const POSTGRAD = /master['’]?s|postgraduate|\bphd\b|doctoral|\bMBA\b|\bPGT\b|\bPGR\b/i;
 const MONTH_NUM: Record<string, number> = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 
-function milestones(lines: string[]): MilestoneCandidate[] {
+function milestones(lines: string[], asOf: string | null): MilestoneCandidate[] {
   const out: MilestoneCandidate[] = [];
   lines.forEach((line, i) => {
     for (const s of sentences(line)) {
@@ -285,6 +288,10 @@ function milestones(lines: string[]): MilestoneCandidate[] {
         if (!(day >= 1 && day <= 31)) continue;
         const reasons: string[] = [];
         if (!year) reasons.push("no year published with the date");
+        const iso = year ? `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}` : null;
+        if (iso && asOf && iso < asOf) reasons.push("date had already passed when the page was retrieved (earlier admissions cycle?)");
+        if (new RegExp(`\\bbetween\\s+(?:the\\s+)?${m[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(s)) reasons.push("start of a date range, not a deadline");
+        if (/\b(spring|winter|summer|january)\s+(?:20\d\d\s+)?(term|semester|intake|entry|start|admission)\b/i.test(s)) reasons.push("applies to a spring, winter or summer start");
         const nearby = lines.slice(Math.max(0, i - 8), i).filter((l) => isHeading(l)).join(" ");
         if (POSTGRAD.test(s) || POSTGRAD.test(nearby)) reasons.push("applies to postgraduate study");
         if (/medicine|dentistry|veterinary|oxford|cambridge|nursing|midwifery|architecture/i.test(s)) reasons.push("applies only to some courses");
@@ -293,7 +300,7 @@ function milestones(lines: string[]): MilestoneCandidate[] {
         const time = s.match(/\b\d{1,2}(?::\d{2})?\s?(?:a\.m\.|p\.m\.|am\b|pm\b)|\b\d{1,2}:\d{2}\b/i)?.[0] ?? null;
         const tz = s.match(/\b(ET|EST|EDT|CT|CST|PT|PST|GMT|BST|UK time|Eastern Time|Central Time|Pacific Time)\b/)?.[0] ?? null;
         out.push({
-          kind: "milestone", dateText: m[0], dateStart: year ? `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}` : null,
+          kind: "milestone", dateText: m[0], dateStart: iso,
           cutoffTime: time, timezone: tz, round, cue: cue[0], scholarship: /scholarship|award|bursary|grant/i.test(s), evidence: s, line: i,
           status: reasons.length ? "needs_confirmation" : "ready", reasons,
         });
@@ -303,10 +310,13 @@ function milestones(lines: string[]): MilestoneCandidate[] {
   return out;
 }
 
-/** All candidates from one page. Deterministic: the same text always gives the same result. */
-export function extract(text: string): Candidate[] {
+/**
+ * All candidates from one page. Deterministic: the same text and retrieval date always give the
+ * same result. `asOf` (YYYY-MM-DD, the retrieval date) marks dates already past as not current.
+ */
+export function extract(text: string, asOf: string | null = null): Candidate[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  return [...costs(lines), ...language(lines), ...gradePolicy(lines), ...milestones(lines)];
+  return [...costs(lines), ...language(lines), ...gradePolicy(lines), ...milestones(lines, asOf)];
 }
 
 /**

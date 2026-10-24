@@ -142,7 +142,7 @@ function programsNamedBy(label: string | null, programs: Doc<"programs">[]) {
 export const publishFacts = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const counts = { requirements: 0, costItems: 0, milestones: 0, removed: 0, withheldAmbiguousTuition: 0, withheldConflicting: 0, duplicates: 0, otherCourse: 0 };
+    const counts = { requirements: 0, costItems: 0, milestones: 0, removed: 0, withheldAmbiguousTuition: 0, withheldConflicting: 0, duplicates: 0, otherCourse: 0, withheldNoTuition: 0 };
     for (const table of ["requirements", "costItems", "milestones"] as const) {
       for (const row of await ctx.db.query(table).collect()) {
         if (!row.candidateId) continue;
@@ -165,6 +165,9 @@ export const publishFacts = internalMutation({
         langScores.set(k, (langScores.get(k) ?? new Set()).add(f.score));
       }
       const seen = new Set<string>();
+      // Institution-wide living costs and fees are only coherent next to a tuition figure from the
+      // same page (one cost-of-attendance table); otherwise alternatives (on/off campus, per term vs
+      // per year) would be added together.
       const instTuition = new Map<string, Set<number>>();
       for (const c of ready.filter((c) => c.kind === "cost")) {
         const f = c.fields as CostFields;
@@ -173,6 +176,14 @@ export const publishFacts = internalMutation({
           instTuition.set(k, (instTuition.get(k) ?? new Set()).add(f.amount));
         }
       }
+      // Pages whose tuition is actually published (on a program page, naming a program, or the
+      // institution's single tuition amount); withheld ambiguous tuition does not count.
+      const tuitionSources = new Set(ready.filter((c) => {
+        const f = c.fields as CostFields;
+        if (c.kind !== "cost" || f.itemType !== "tuition") return false;
+        if (bySource.has(c.sourceId) || programsNamedBy(f.label, programs).length) return true;
+        return !namesACourse(f.label) && (instTuition.get(`${f.currency}:${f.academicYear}`)?.size ?? 0) <= 1;
+      }).map((c) => c.sourceId as string));
       for (const c of ready) {
         if (await ctx.db.query("costItems").withIndex("by_candidate", (q) => q.eq("candidateId", c._id)).first()) continue;
         if (await ctx.db.query("requirements").withIndex("by_candidate", (q) => q.eq("candidateId", c._id)).first()) continue;
@@ -205,6 +216,11 @@ export const publishFacts = internalMutation({
           else if (!onPage && f.itemType === "tuition" && (instTuition.get(`${f.currency}:${f.academicYear}`)?.size ?? 0) > 1) {
             await ctx.db.delete(evidenceId);
             counts.withheldAmbiguousTuition++;
+            continue;
+          }
+          if (!onPage && named.length === 0 && f.itemType !== "tuition" && !tuitionSources.has(c.sourceId as string)) {
+            await ctx.db.delete(evidenceId);
+            counts.withheldNoTuition++;
             continue;
           }
           for (const programId of targets) {
@@ -387,4 +403,43 @@ export const getProgram = query({
     const campus = p.campusId ? await ctx.db.get(p.campusId) : null;
     return { ...view, campusEvidence: campus?.settingEvidence ?? null };
   },
+});
+
+const TOPIC_QUERIES: Record<string, { US: string; GB: string }> = {
+  costs: { US: "international students cost of attendance tuition first-year undergraduate", GB: "international undergraduate tuition fees 2027" },
+  deadlines: { US: "first-year application deadlines early action regular decision", GB: "undergraduate application deadline UCAS 2027 entry" },
+  econ: { US: "economics major bachelor's degree BA BS undergraduate", GB: "BSc Economics undergraduate course 2027" },
+  cs: { US: "computer science major bachelor's degree undergraduate", GB: "BSc Computer Science undergraduate course 2027" },
+};
+
+/**
+ * Coverage discovery: SERP queries by topic for the chosen institutions, then one Actor run over
+ * the official pages found (depth 0, or 1 for hub pages when asked).
+ */
+export const discoverTopics = internalAction({
+  args: { topics: v.array(v.string()), slugs: v.optional(v.array(v.string())), perQuery: v.optional(v.number()), maxDepth: v.optional(v.number()) },
+  handler: async (ctx, { topics, slugs, perQuery, maxDepth }): Promise<{ queries: number; found: number; urls: number; apifyRunId: string; missing: string[] }> => {
+    const take = perQuery ?? 2;
+    const known = new Set((await ctx.runQuery(internal.catalog.knownUrls, {})) as string[]);
+    const jobs = (config.institutions as Inst[]).filter((i) => !slugs || slugs.includes(i.slug))
+      .flatMap((inst) => topics.map((topic) => ({ inst, topic, q: TOPIC_QUERIES[topic]! })));
+    const log: { slug: string; topic: string; ok: boolean; attempts: number; links: string[]; error?: string }[] = [];
+    for (let i = 0; i < jobs.length; i += 4) {
+      await Promise.all(jobs.slice(i, i + 4).map(async ({ inst, topic, q }) => {
+        const r = await serp(`site:${inst.domains[0]} ${inst.country === "GB" ? q.GB : q.US}`, inst.country as "US" | "GB");
+        const own = r.links.filter((l) => onDomain(new URL(l).hostname, inst.domains) && !/\.pdf($|\?)/i.test(l) && !(inst.otherCampusMarkers ?? []).some((m) => l.toLowerCase().includes(m.replace(/\s/g, ""))));
+        log.push({ slug: inst.slug, topic, ok: own.length > 0, attempts: r.attempts, links: own.slice(0, take), error: r.error });
+      }));
+    }
+    await ctx.runMutation(internal.catalog.recordDiscovery, { log });
+    const urls = [...new Set(log.flatMap((l) => l.links))].filter((u) => !known.has(u));
+    if (!urls.length) throw new Error("No new official pages found");
+    const run: { apifyRunId: string } = await ctx.runAction(internal.ingestion.startRun, { startUrls: urls, label: `coverage: ${topics.join(", ")}`, maxDepth: maxDepth ?? 0, maxPages: Math.min(150, urls.length * (maxDepth ? 6 : 1)) });
+    return { queries: log.length, found: log.filter((l) => l.ok).length, urls: urls.length, apifyRunId: run.apifyRunId, missing: log.filter((l) => !l.ok).map((l) => `${l.slug}/${l.topic}: ${l.error ?? "none on own domain"}`) };
+  },
+});
+
+export const knownUrls = internalQuery({
+  args: {},
+  handler: async (ctx) => (await ctx.db.query("sources").collect()).filter((s) => s.status === "ok" || s.status === "changed").map((s) => s.url),
 });

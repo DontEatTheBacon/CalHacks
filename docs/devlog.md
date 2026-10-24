@@ -186,3 +186,12 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Verified: headless Chrome on the dev deployment 11/11 (fictional Nadia: CS programs first, economics listed as "other major", MSU "slightly over budget" from its full published international costs, Lancaster "within budget (costs incomplete)", countryside filter shows 7 programs and "4 hidden"); 3 new Convex tests (44 total), 52 rule tests.
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — Coverage pass (Claude Code)
+- Stage: live data and rule fixes.
+- `catalog:discoverTopics` runs topic searches through Bright Data (international costs, application deadlines, and retries for missing programs) and starts one Actor run per batch. Three runs: costs/deadlines (24 searches, 23 found, 31 new pages), US economics (5 searches, 4 found, 6 pages), Exeter/Manchester CS (2 found, 3 pages). Penn State costs failed with the SERP zone's plain-text "This query…" error after 3 attempts; Illinois economics had no official result.
+- Result: 35 programs (was 28; added Penn State Economics BS/BA, Wisconsin Economics, Dartmouth Economics, Exeter and Manchester CS, Exeter CS & Mathematics). Programs with an upcoming application deadline 13 (was 3), English minimum 16 (was 15), international tuition 4 (unchanged after a false Exeter value was removed), living costs 1 (MSU).
+- Review of every newly published value found wrong ones; each fixed with a test: Exeter's "£25,000" was the student-loan repayment threshold; Bath's "1 August 2021" came from "due to"; Manchester/Lancaster/Sheffield dates were from the previous cycle or a range start (extraction now uses the retrieval date and flags past dates and "between X and" starts); Wisconsin's date was for a spring start; Northeastern's living-cost alternatives (on/off campus, per term vs per year) would have been added together (institution-wide living costs now require a published tuition figure from the same page); Exeter's £25,700–£49,300 "fee" amounts are course tuition (large amounts labelled only "fee" need confirmation); Bath's £100 printing estimate counted as living costs (course extras excluded).
+- Remaining gap: US tuition. US pages give in-state/out-of-state rates without saying international students pay the out-of-state rate, so it stays "needs confirmation" by design.
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):

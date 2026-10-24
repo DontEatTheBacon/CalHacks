@@ -102,6 +102,19 @@ describe("catalog", () => {
     expect((await programs(t))[0]!.costs).toEqual([]);
   });
 
+  test("institution-wide living costs are published only next to a tuition figure from the same page", async () => {
+    const t = setup();
+    await page(t, "https://catalog.northeastern.edu/undergraduate/x/economics-bs/", "Economics, BS (Boston) < Northeastern University Academic Catalog");
+    const housingOnly = await page(t, "https://studentfinance.northeastern.edu/costs", "Costs");
+    await candidate(t, housingOnly, "cost", cost(13612, "Housing", { itemType: "housing_estimate", currency: "USD" }));
+    await candidate(t, housingOnly, "cost", cost(13148, "Housing", { itemType: "housing_estimate", currency: "USD" }));
+    // Two different tuition amounts on the same page are ambiguous, so they do not make it coherent.
+    await candidate(t, housingOnly, "cost", cost(30000, "Tuition (CPS)", { currency: "USD" }));
+    await candidate(t, housingOnly, "cost", cost(65000, "Tuition (day)", { currency: "USD" }));
+    const r = await build(t);
+    expect(r).toMatchObject({ costItems: 0, withheldNoTuition: 2, withheldAmbiguousTuition: 2 });
+  });
+
   test("the program list is for signed-in users only", async () => {
     const t = setup();
     await expect(t.query(api.catalog.listPrograms, {})).rejects.toThrow(/Sign in required/);

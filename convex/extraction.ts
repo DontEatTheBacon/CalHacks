@@ -16,20 +16,20 @@ export const sourceForExtraction = internalQuery({
     const source = await ctx.db.get(sourceId);
     if (!source?.textRef) return null;
     const runs = await ctx.db.query("extractionRuns").withIndex("by_source", (q) => q.eq("sourceId", sourceId)).collect();
-    return { textRef: source.textRef, domain: source.domain, done: runs.some((r) => r.model === RULES_VERSION) };
+    return { textRef: source.textRef, domain: source.domain, retrievedAt: source.retrievedAt, done: runs.some((r) => r.model === RULES_VERSION) };
   },
 });
 
 export const extractSource = internalAction({
   args: { sourceId: v.id("sources") },
   handler: async (ctx, { sourceId }): Promise<Id<"extractionRuns"> | null> => {
-    const src: { textRef: Id<"_storage">; domain: string; done: boolean } | null =
+    const src: { textRef: Id<"_storage">; domain: string; retrievedAt: number; done: boolean } | null =
       await ctx.runQuery(internal.extraction.sourceForExtraction, { sourceId });
     if (!src || src.done) return null;
     const blob = await ctx.storage.get(src.textRef);
     if (!blob) return null;
     const text = await blob.text();
-    const results = extract(text).map((c) => {
+    const results = extract(text, new Date(src.retrievedAt).toISOString().slice(0, 10)).map((c) => {
       const check = validate(c, text);
       const { evidence, line, status, reasons, kind, ...fields } = c;
       return {
