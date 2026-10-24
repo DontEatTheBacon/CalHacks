@@ -209,6 +209,24 @@ export default defineSchema({
     validatorResult: v.any(),
     createdAt: v.number(),
   }).index("by_source", ["sourceId"]),
+  // Facts found on a page by the rule-based extractor, before they are matched to programs.
+  // "ready" = nothing had to be guessed; "needs_confirmation" lists why; "rejected" failed validation.
+  candidates: defineTable({
+    sourceId: v.id("sources"),
+    extractionRunId: v.id("extractionRuns"),
+    domain: v.string(),
+    kind: v.union(v.literal("cost"), v.literal("language"), v.literal("grade_policy"), v.literal("milestone")),
+    status: v.union(v.literal("ready"), v.literal("needs_confirmation"), v.literal("rejected")),
+    reasons: v.array(v.string()),
+    fields: v.any(),
+    evidence: v.string(),
+    line: v.number(),
+    ruleVersion: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_source", ["sourceId"])
+    .index("by_domain_kind", ["domain", "kind", "status"]),
+
   evidence: defineTable({
     sourceId: v.id("sources"),
     excerpt: v.string(),

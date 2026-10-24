@@ -239,6 +239,7 @@ export const collect = internalAction({
         if (items.length < PAGE_SIZE) break;
       }
       await ctx.runMutation(internal.ingestion.finish, { apifyRunId, status: "stored", apifyStatus, via, counts });
+      if (counts.new + counts.changed > 0) await ctx.scheduler.runAfter(0, internal.extraction.extractPending, {});
       return "stored";
     } catch (e) {
       // Leave the run claimable again: the lease expires and polling or a webhook replay retries.
