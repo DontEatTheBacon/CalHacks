@@ -1,0 +1,11 @@
+{
+  "name": "langkah-crawler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Langkah: collects official US/UK university pages for Convex ingestion",
+  "main": "src/main.js",
+  "scripts": { "start": "node src/main.js" },
+  "dependencies": { "apify": "^3.4.0" },
+  "engines": { "node": ">=22" }
+}

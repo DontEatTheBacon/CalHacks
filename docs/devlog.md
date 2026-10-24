@@ -142,3 +142,12 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Rework: the first run found only 14/24 because the SERP zone intermittently returns empty bodies, timeouts, unrelated results or redirect links; retries fixed it.
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — Apify Actor and Convex collection (WP3, first half of WP4) (Claude Code)
+- Stage: code generation and integration test.
+- The user set `APIFY_TOKEN` (free plan, $5/month). Claude logged the Apify CLI in with it from the Convex environment, stored the Bright Data key as an Actor secret, and pushed `langkah-crawler`.
+- Built: the Actor (queue, de-duplication, same-site link following, retries with backoff, Web Unlocker fallback, cleaned text, SHA-256, per-page status) and Convex collection (async start with webhook, secret webhook path, run confirmed through the Apify API, idempotent storage, unchanged/changed detection, polling backup). Convex variables set by Claude: `APIFY_ACTOR_ID`, `APIFY_WEBHOOK_SECRET` (generated, never displayed).
+- Verified live: smoke run used both fetch paths; a Convex-started run was announced by webhook in about 20 s and stored; hand replays added nothing; wrong secret 404; a repeat crawl found all 5 pages unchanged. Tests: 37 rule/crawler, 36 Convex. Evidence: `docs/sponsors/apify.md`.
+- Rework, dead ends: Apify rejected the first build (input fields need descriptions); unit tests caught a URL de-duplication bug and text-cleaning bugs; `convex-test` cannot run two file-writing actions at once, so the replay test delivers notifications one after another.
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):

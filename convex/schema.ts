@@ -163,9 +163,33 @@ export default defineSchema({
   }).index("by_institution", ["institutionId"]),
 
   // ---- Evidence ----
+  // One row per Apify run started by Convex (AP-5). Webhook and polling both end in `collect`,
+  // which claims the run with a lease so a duplicate notification cannot store anything twice.
+  ingestionRuns: defineTable({
+    apifyRunId: v.string(),
+    datasetId: v.optional(v.string()),
+    label: v.optional(v.string()),
+    status: v.union(v.literal("running"), v.literal("collecting"), v.literal("stored"), v.literal("failed")),
+    apifyStatus: v.optional(v.string()),
+    startUrls: v.array(v.string()),
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    collectingSince: v.optional(v.number()),
+    notifiedBy: v.optional(v.union(v.literal("webhook"), v.literal("poll"))),
+    webhookCount: v.number(),
+    counts: v.optional(v.object({ new: v.number(), changed: v.number(), unchanged: v.number(), failed: v.number() })),
+    error: v.optional(v.string()),
+  }).index("by_apify_run", ["apifyRunId"]),
+
   sources: defineTable({
     url: v.string(),
+    finalUrl: v.optional(v.string()),
     domain: v.string(),
+    title: v.optional(v.string()),
+    httpStatus: v.optional(v.number()),
+    error: v.optional(v.string()),
+    depth: v.optional(v.number()),
+    previousId: v.optional(v.id("sources")), // set when the content changed since the last retrieval
     retrievedAt: v.number(),
     fetchMethod: v.union(v.literal("plain"), v.literal("web_unlocker"), v.literal("failed")),
     status: v.union(
@@ -176,7 +200,7 @@ export default defineSchema({
     apifyRunId: v.optional(v.string()),
     textRef: v.optional(v.id("_storage")),
     verification,
-  }).index("by_url", ["url"]).index("by_run", ["apifyRunId"]),
+  }).index("by_url", ["url", "retrievedAt"]).index("by_run", ["apifyRunId"]),
   extractionRuns: defineTable({
     sourceId: v.id("sources"),
     model: v.string(),

@@ -9,7 +9,7 @@
     "dev:web": "npm run dev -w web",
     "dev:convex": "convex dev",
     "test": "npm run test:rules && npm run test:convex",
-    "test:rules": "node --experimental-strip-types --no-warnings --test \"tests/rules/**/*.test.ts\"",
+    "test:rules": "node --experimental-strip-types --no-warnings --test \"tests/rules/**/*.test.ts\" \"tests/actor/**/*.test.ts\"",
     "test:convex": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p convex",
     "setup:auth": "node scripts/setup-auth-keys.mjs",

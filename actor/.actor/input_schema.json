@@ -1,0 +1,87 @@
+{
+  "title": "Langkah crawler input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "startUrls": {
+      "title": "Start URLs",
+      "type": "array",
+      "editor": "stringList",
+      "description": "Official pages to start from.",
+      "prefill": [
+        "https://www.bath.ac.uk/topics/tuition-fees/"
+      ]
+    },
+    "allowedDomains": {
+      "title": "Allowed domains",
+      "type": "array",
+      "editor": "stringList",
+      "description": "Only these domains (and subdomains) are fetched.",
+      "prefill": [
+        "bath.ac.uk"
+      ]
+    },
+    "maxDepth": {
+      "title": "Link depth",
+      "type": "integer",
+      "default": 1,
+      "minimum": 0,
+      "maximum": 3,
+      "description": "How many link hops to follow from each start URL (0 = start URLs only)."
+    },
+    "maxPages": {
+      "title": "Maximum pages",
+      "type": "integer",
+      "default": 40,
+      "minimum": 1,
+      "maximum": 300,
+      "description": "Stop after this many pages in total."
+    },
+    "maxConcurrency": {
+      "title": "Parallel requests",
+      "type": "integer",
+      "default": 3,
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Pages fetched at the same time."
+    },
+    "linkKeywords": {
+      "title": "Link keywords",
+      "type": "array",
+      "editor": "stringList",
+      "description": "Follow a link only if its URL or text contains one of these.",
+      "default": []
+    },
+    "requestTimeoutSecs": {
+      "title": "Plain request timeout (s)",
+      "type": "integer",
+      "default": 30,
+      "description": "Timeout for a plain HTTPS request."
+    },
+    "unlockerTimeoutSecs": {
+      "title": "Web Unlocker timeout (s)",
+      "type": "integer",
+      "default": 180,
+      "minimum": 180,
+      "description": "Timeout for a Bright Data Web Unlocker request (at least 180 s)."
+    },
+    "maxAttempts": {
+      "title": "Attempts per method",
+      "type": "integer",
+      "default": 3,
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Tries per fetch method before giving up or switching to Web Unlocker."
+    },
+    "label": {
+      "title": "Run label",
+      "type": "string",
+      "editor": "textfield",
+      "description": "Free text recorded on every item."
+    }
+  },
+  "required": [
+    "startUrls",
+    "allowedDomains"
+  ]
+}

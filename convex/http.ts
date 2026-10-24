@@ -60,4 +60,38 @@ http.route({
   handler: httpAction(async () => new Response(null, { status: 204, headers: { ...cors(), "Access-Control-Max-Age": "600" } })),
 });
 
+function sameSecret(a: string, b: string) {
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < b.length; i++) diff |= (a.charCodeAt(i) || 0) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/**
+ * Apify run-finished webhook (AP-5). The secret is in the path. The body only tells us which
+ * run to look at; collection re-reads the run from the Apify API and is idempotent, so a forged
+ * or replayed call cannot store anything that is not really in the Actor's dataset.
+ */
+http.route({
+  pathPrefix: "/apify/webhook/",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const expected = process.env.APIFY_WEBHOOK_SECRET;
+    const given = new URL(request.url).pathname.slice("/apify/webhook/".length);
+    if (!expected || expected.length < 32 || !sameSecret(given, expected)) return new Response("Not found", { status: 404 });
+    let runId: unknown;
+    try {
+      const body = await request.json();
+      runId = body?.eventData?.actorRunId ?? body?.resource?.id;
+    } catch {
+      return new Response("Bad request", { status: 400 });
+    }
+    if (typeof runId !== "string" || !/^[A-Za-z0-9]{8,32}$/.test(runId)) return new Response("Bad request", { status: 400 });
+    const known = await ctx.runMutation(internal.ingestion.noteWebhook, { apifyRunId: runId });
+    if (!known) return new Response("Unknown run", { status: 404 });
+    // Answer quickly; collection runs in the background.
+    await ctx.scheduler.runAfter(0, internal.ingestion.collect, { apifyRunId: runId, via: "webhook" });
+    return new Response("OK", { status: 200 });
+  }),
+});
+
 export default http;

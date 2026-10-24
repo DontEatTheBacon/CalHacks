@@ -14,6 +14,7 @@ import type * as counseling from "../counseling.js";
 import type * as crons from "../crons.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
+import type * as ingestion from "../ingestion.js";
 import type * as jobs from "../jobs.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_fileSignature from "../lib/fileSignature.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   files: typeof files;
   http: typeof http;
+  ingestion: typeof ingestion;
   jobs: typeof jobs;
   "lib/access": typeof lib_access;
   "lib/fileSignature": typeof lib_fileSignature;

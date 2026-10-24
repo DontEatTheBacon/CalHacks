@@ -1,0 +1,13 @@
+{
+  "actorSpecification": 1,
+  "name": "langkah-crawler",
+  "title": "Langkah university page crawler",
+  "description": "Collects official US and UK university admissions, fee and deadline pages from an allowlist of domains, with Bright Data Web Unlocker as a fallback. Outputs cleaned text with content hashes for ingestion.",
+  "version": "0.1",
+  "input": "./input_schema.json",
+  "dockerfile": "./Dockerfile",
+  "environmentVariables": {
+    "BRIGHTDATA_API_KEY": "@langkahBrightdataKey",
+    "BRIGHTDATA_UNLOCKER_ZONE": "web_unlocker1_langkah"
+  }
+}
