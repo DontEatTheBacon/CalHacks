@@ -26,6 +26,9 @@ export const academicOutcome = v.union(
 export const jobStatus = v.union(
   v.literal("queued"), v.literal("running"), v.literal("succeeded"), v.literal("failed"), v.literal("cancelled"),
 );
+export const climatePref = v.union(
+  v.literal("warm"), v.literal("mild"), v.literal("cool"), v.literal("cold"), v.literal("no_preference"), v.literal("unknown"),
+);
 export const fileState = v.union(v.literal("validating"), v.literal("ready"), v.literal("rejected"));
 
 export default defineSchema({
@@ -57,9 +60,12 @@ export default defineSchema({
     countries: v.array(country),
     settings: v.array(v.union(v.literal("city"), v.literal("countryside"))),
     majors: v.array(v.string()),
-    climate: v.optional(v.string()),
-    intakeTerm: v.optional(v.string()),
+    // Whether related fields (config/taxonomy.json) are acceptable alternatives.
+    relatedOk: v.optional(v.boolean()),
+    climate: v.optional(climatePref),
+    intakeTerm: v.optional(v.union(v.literal("fall"), v.literal("spring"), v.literal("unknown"))),
     intakeYear: v.optional(v.number()),
+    intakeCompletedAt: v.optional(v.number()),
     version: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
@@ -73,9 +79,11 @@ export default defineSchema({
   // Append-only: originals are never overwritten (scenario 19).
   qualificationRecords: defineTable({
     userId: v.id("users"),
+    qualificationType: v.optional(v.string()), // SMA, SMK, MA, IB, Cambridge, other
     curriculum: v.string(),
     school: v.optional(v.string()),
-    year: v.optional(v.number()),
+    gradeLevel: v.optional(v.number()), // current class: 10, 11 or 12
+    year: v.optional(v.number()), // expected graduation year
     scaleMin: v.number(),
     scaleMax: v.number(),
     reportedOverall: v.optional(v.number()),
@@ -96,6 +104,7 @@ export default defineSchema({
     takenOn: v.optional(v.string()),
     status: v.union(v.literal("taken"), v.literal("not_taken"), v.literal("unknown")),
     validUntil: v.optional(v.string()),
+    updatedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
   // ---- Catalog (written only by ingestion) ----

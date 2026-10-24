@@ -119,3 +119,13 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
 - How the output reached the project: commit on the `langkah` branch.
+
+### 2026-10-24 — Student intake (screen 1, PROF-001) (Claude Code, MacBook)
+- Stage: code generation.
+- Prompted by the user asking about "the initial survey the user needs to fill out".
+- What was done: a four-step intake at `/intake` following the mock's journey (study preferences, Indonesian school results, English tests, review). Saved per step to Convex so students can leave and resume; every answer except destination country can be "don't know yet"; a counselor can be requested from any step without leaving the form. New students are sent to the intake after sign-up; the dashboard links back to it. Indonesian default, English toggle. Backend: new fields (related fields, climate choice, intake term, school type, class, completion time), language evidence per test, server-side validation of majors, budget, currency, intake year, grade scale and test scores.
+- Verified: 5 new Convex tests (31 total); a headless Chrome click-through on the real dev deployment passed 13/13 (sign-up → intake, out-of-scale grade refused with an Indonesian message, counseling from the intake, review shows saved answers, answers survive reload, English toggle, finish → dashboard, no horizontal scroll at 375 px, no console errors).
+- Rework: the first browser run showed server error messages in English inside the Indonesian form; grade checks now run in the browser first with localized messages, and the server still checks.
+- Not done: the visual design (comes from Figma); the dashboard does not yet show discovery results (needs ingestion and ranking).
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):

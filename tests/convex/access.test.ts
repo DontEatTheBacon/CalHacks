@@ -6,7 +6,7 @@ import { as, counselor, setup, student, threeCounselors } from "./setup";
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-const profile = { countries: ["US" as const, "GB" as const], settings: [], majors: ["computer_science"], budgetAmount: 1_200_000_000, budgetCurrency: "IDR" };
+const profile = { countries: ["US" as const, "GB" as const], settings: [], majors: ["cs"], budgetAmount: 1_200_000_000, budgetCurrency: "IDR" };
 
 describe("identity and roles", () => {
   test("signed-out callers get nothing", async () => {
@@ -53,7 +53,7 @@ describe("student data isolation", () => {
     }
     expect(await as(t, budi).query(api.counseling.listAssigned, {})).toEqual([]);
     const read = await as(t, ayu).query(api.profiles.getForStudent, { studentId: nadia });
-    expect(read.profile?.majors).toEqual(["computer_science"]);
+    expect(read.profile?.majors).toEqual(["cs"]);
   });
 
   test("profile edits keep history; qualification records are append-only", async () => {

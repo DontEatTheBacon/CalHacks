@@ -23,6 +23,7 @@ const strings = {
     noFiles: "Belum ada berkas.",
     assignedStudents: "Siswa yang ditugaskan", noStudents: "Belum ada siswa yang ditugaskan.",
     sharedFiles: "Berkas yang dibagikan", back: "Kembali",
+    profile: "Profil dan preferensi", editProfile: "Ubah profil",
   },
   en: {
     appName: "Langkah",
@@ -45,6 +46,7 @@ const strings = {
     noFiles: "No files yet.",
     assignedStudents: "Assigned students", noStudents: "No students assigned yet.",
     sharedFiles: "Shared files", back: "Back",
+    profile: "Profile and preferences", editProfile: "Edit profile",
   },
 };
 

@@ -39,7 +39,7 @@ convexRun("admin:makeCounselor", { email: ayu.email, displayName: "Counselor Ayu
 convexRun("admin:makeCounselor", { email: budi.email, displayName: "Counselor Budi (fictional)", rotationOrder: run + 1 });
 ok((await ayu.client.query("profiles:me", {}))?.role === "counselor", "admin function grants the counselor role");
 
-await nadia.client.mutation("profiles:upsertMine", { countries: ["US", "GB"], settings: [], majors: ["computer_science"], budgetAmount: 1200000000, budgetCurrency: "IDR", budgetPeriod: "annual", budgetScope: "all_in", intakeYear: 2027 });
+await nadia.client.mutation("profiles:upsertMine", { countries: ["US", "GB"], settings: [], majors: ["cs"], budgetAmount: 1200000000, budgetCurrency: "IDR", budgetPeriod: "annual", budgetScope: "all_in", intakeYear: 2027 });
 const req = await nadia.client.mutation("counseling:request", { stage: "intake" });
 ok(req.status === "assigned", `counseling request assigned (to ${req.counselorName})`);
 const mine = req.counselorName?.startsWith("Counselor Ayu") ? ayu : budi;

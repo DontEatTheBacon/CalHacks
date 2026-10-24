@@ -4,20 +4,23 @@
 // later from Figma (docs/figma-plan.md); this page proves the flows end to end.
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { SharedFiles, StudentFiles } from "@/components/Files";
 import { Thread } from "@/components/Thread";
-import { t, type Locale, type Strings } from "@/lib/strings";
+import { t, type Strings } from "@/lib/strings";
+import { useLocale } from "@/lib/useLocale";
 
 export default function Home() {
   const me = useQuery(api.profiles.me);
   const { signOut } = useAuthActions();
-  const [locale, setLocale] = useState<Locale | null>(null);
+  const [locale, setLocale] = useLocale();
   if (me === undefined) return <main className="p-6">…</main>;
   if (me === null) return <main className="p-6">Sign in required.</main>;
-  const s = t(locale ?? (me.locale as Locale));
+  const s = t(locale);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6">
@@ -27,8 +30,8 @@ export default function Home() {
           <p className="text-sm text-stone-600">{me.name ?? me.email} · {me.role === "student" ? s.student : s.counselor}</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <button className="underline" onClick={() => setLocale((locale ?? me.locale) === "id" ? "en" : "id")}>
-            {(locale ?? me.locale) === "id" ? "English" : "Bahasa Indonesia"}
+          <button className="underline" onClick={() => setLocale(locale === "id" ? "en" : "id")}>
+            {locale === "id" ? "English" : "Bahasa Indonesia"}
           </button>
           <button className="underline" onClick={() => void signOut()}>{s.signOut}</button>
         </div>
@@ -39,11 +42,22 @@ export default function Home() {
 }
 
 function StudentHome({ s }: { s: Strings }) {
+  const router = useRouter();
+  const intake = useQuery(api.profiles.intake);
   const status = useQuery(api.counseling.myStatus);
   const request = useMutation(api.counseling.request);
   const [error, setError] = useState<string | null>(null);
+  // New students start with the intake (spec screen 1).
+  useEffect(() => {
+    if (intake && !intake.completed) router.replace("/intake");
+  }, [intake, router]);
+  if (!intake?.completed) return null;
   return (
     <>
+      <section className="flex items-center justify-between rounded border border-stone-200 bg-white p-4">
+        <h2 className="font-semibold">{s.profile}</h2>
+        <Link href="/intake" className="text-sm text-emerald-800 underline">{s.editProfile}</Link>
+      </section>
       <section className="rounded border border-stone-200 bg-white p-4">
         <h2 className="mb-2 font-semibold">{s.counseling}</h2>
         {status?.status === "assigned" && status.counselorName && <p className="text-sm">{s.counselingAssigned(status.counselorName)}</p>}
