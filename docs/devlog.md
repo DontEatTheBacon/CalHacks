@@ -103,3 +103,19 @@ Rule for this file: record only what actually happened, with the real date it wa
 - The user reported interviewing about 20 Indonesian transfer students at UC Berkeley about what would make finding universities abroad easier. Recorded in `docs/research/interviews.md`; details (when, how, what they said, what changed) still to be supplied.
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — WP1: Next.js, Convex, Convex Auth, access control, files, job table (Claude Code, MacBook)
+- Stage: code generation.
+- Tools used and why: Claude Code on the MacBook (npm works here); `create-next-app` for `apps/web`; Convex CLI with a temporary local anonymous deployment because the Convex CLI is not yet logged in on this Mac; `convex-test` + Vitest for backend tests.
+- What was done:
+  - Docs switched from Clerk to Convex Auth everywhere it still appeared (CV-2, test-demo-setup 3.1, engineering detail, design delta, readme-first).
+  - npm workspaces: root holds `convex/`, `apps/web` is Next.js 16.4 (App Router, Tailwind 4, `proxy.ts` instead of the deprecated `middleware.ts`).
+  - `convex/schema.ts` with all tables from the engineering detail; Convex Auth (password); roles (sign-up is always student, counselor only via internal admin function); access helpers; profiles with history and append-only qualification records; round-robin counseling; messages; private files with server-side signature checks and an authenticated download HTTP action; job table with leases, retries, idempotency and a one-minute sweeper.
+  - Minimal working web shell (sign-in, student: counseling, messages, files; counselor: assigned students, case, shared files). Indonesian default with an English toggle. Not the final design.
+  - `scripts/setup-auth-keys.mjs` sets the Convex Auth signing keys on the deployment without printing them.
+- Verified: 31 rule tests and 26 Convex tests pass; type checks pass for root, `convex/` and `apps/web`; `next build` succeeds; `scripts/e2e-wp1.mjs` passed 18/18 against the local backend (real sign-up, role cannot be self-assigned, round robin, unassigned counselor and other student denied, upload, download 200/401/404, share/unshare, CORS); Next `/api/auth` sign-up sets session cookies and `/` loads signed in. Sabotaging the file access check made 2 tests fail, so the tests detect it.
+- Not verified: clicking through the web shell in a real browser; anything on the real "langkah" Convex project (needs `npx convex login` by the user).
+- Rework, dead ends: `@auth/core` 0.37 conflicted with Convex Auth 0.0.96 (needs 0.41); Convex mutations cannot read blobs, so signature checks moved to scheduled actions; throwing after deleting a blob would roll the delete back, so upload rejections return an error instead; `@next/env` ignored the root `.env.local`, replaced by `process.loadEnvFile`.
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):
+- How the output reached the project: commit on the `langkah` branch.

@@ -5,7 +5,7 @@ Status: Architect's decisions for a prototype. These fill the gaps left by `spec
 
 ## 1. Server function surface (Convex)
 
-Every public function first resolves the caller (Clerk identity → `users` row → role) and rejects otherwise. "Owner" means the student whose data it is.
+Every public function first resolves the caller (Convex Auth identity → `users` row → role) and rejects otherwise. "Owner" means the student whose data it is.
 
 | Module | Function | Caller | Notes |
 | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ Every public function first resolves the caller (Clerk identity → `users` row 
 
 Types: `id` = Convex ID; `ts` = number (ms); `enum` = string union. Every table also has `_id` and `_creationTime`. Indexes in brackets.
 
-- `users`: clerkSubject, role (enum student|counselor), locale, createdAt. [by_subject]
+- `users`: Convex Auth fields (name, email, …) plus role (enum student|counselor), locale. [email] Auth sessions and accounts live in the Convex Auth tables.
 - `studentProfiles`: userId, budgetAmount, budgetCurrency, budgetPeriod (annual|total), budgetScope (tuition_only|all_in), countries (US|GB[]), settings (city|countryside[]), majors (string[]), climate (enum), intakeTerm, intakeYear, version, updatedAt. [by_user]
 - `qualificationRecords`: userId, curriculum, school, year, scaleMin, scaleMax, reportedOverall, notes, createdAt. Append-only. [by_user]
 - `subjectGrades`: qualificationId, subject, grade, scale.
@@ -53,16 +53,16 @@ Types: `id` = Convex ID; `ts` = number (ms); `enum` = string union. Every table 
 - `fxRates`: base, quote, rate, rateDate, source.
 - `milestones`: programId, intakeId, roundId, category, officialName, dateStart, dateEnd, dateType (enum), publishedTimezone, cutoffTime?, originalWording, applicability, mandatoryState, evidenceId, verification, version, supersedes.
 - `studentApplications`: userId, programId, intakeId, roundId, status, createdAt. [by_user]
-- `tasks`: applicationId, milestoneId?, title, owner (student|school|recommender|counselor|university|authority), dueType (official|recommended|student|none), dueAt, status (enum), dependencies (id[]), source (user|agent_proposal|rule), assumptions (string[]), proposalState (proposed|accepted|rejected).
+- `tasks`: userId, applicationId, milestoneId?, title, owner (student|school|recommender|counselor|university|authority), dueType (official|recommended|student|none), dueAt, status (enum), dependencies (id[]), source (user|agent_proposal|rule), assumptions (string[]), proposalState (proposed|accepted|rejected).
 - `changeEvents`: entityType, entityId, field, oldValue, newValue, reason, sourceId, verifiedAt, affectedUsers (count only).
 - `counselors`: userId, active, rotationOrder, jiraAccountId.
-- `rotation`: singleton row with lastIndex.
+- `rotation`: singleton row (key "counselors") with lastOrder, the rotationOrder of the last counselor assigned.
 - `counselingRequests`: userId, status (requested|pending|assigned|closed), contextSnapshot, stage, createdAt.
-- `assignments`: requestId, counselorId, assignedAt, method ("round_robin").
+- `assignments`: requestId, studentId, counselorId, assignedAt, method ("round_robin"), active.
 - `conversations`, `messages`: conversationId, senderType (student|counselor|system), body, programRef?, fileRefs (id[]), state (pending|sent|failed), createdAt.
-- `files`: ownerId, name (sanitized display), storageId, derivativeStorageId?, mime, size, scanState ("not_scanned"), previewState (ok|converting|unavailable), createdAt.
+- `files`: ownerId, name (sanitized display), ext, storageId, derivativeStorageId?, mime, size, state (validating|ready|rejected), rejectReason?, scanState ("not_scanned"), previewState (ok|converting|unavailable|none), createdAt.
 - `fileShares`: fileId, counselorId, sharedAt, revokedAt.
-- `agentJobs`, `agentRuns`: type, payload, status, attempts, idempotencyKey, lastError, steps (json[]), result.
+- `agentJobs`: type, userId?, payload, status, attempts, maxAttempts, idempotencyKey, leaseUntil?, workerId?, lastError, result. `agentRuns`: jobId, attempt, steps (json[]), startedAt, endedAt, outcome.
 - `integrationEvents`: eventId, type, status (sent|acked|failed), attempts, payloadHash.
 - `usage`: userId, day, aiCalls, aiTokens.
 - `deletionRequests`: userId, requestedAt, executedAt.

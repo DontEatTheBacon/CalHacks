@@ -45,7 +45,7 @@ Same visual language as the mock; wireframe-level only.
 | Counselor student detail | Context summary, shortlisted programs, unresolved questions, grade evidence panel, timeline review with conflicts and change history, shared files, thread, follow-up list. |
 | Voice panel | Start and stop, mic permission prompt, states (listening, thinking, speaking, error), live transcript, "Switch to text" always visible, interruption control, notice about where audio goes. |
 | Privacy and settings | Retention notice (10 years by default), delete my data request, language, currency, voice default off. |
-| Sign-in | Clerk-hosted flow; role shown after sign-in. |
+| Sign-in | In-app email and password form (Convex Auth); role shown after sign-in. |
 
 ## 4. Flow reference
 

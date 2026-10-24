@@ -51,7 +51,7 @@ Process-evidence requirements (Figma, Mana, Notability documentation) are in awa
 | ID | Requirement | Verification |
 | --- | --- | --- |
 | CV-1 | All persistent application state lives in Convex, and the UI reads through reactive queries. | No other database in the repository. |
-| CV-2 | Authentication through Clerk (Convex Auth is beta). A users table holds role (student, counselor). Every public function checks identity and role first. | Automated tests: student A cannot read student B; unassigned counselor cannot read any student. |
+| CV-2 | Authentication through Convex Auth (password sign-in; beta, accepted for the prototype after Clerk was dropped on 2026-10-24). The `users` table holds role (student, counselor); sign-up always creates a student, and the counselor role is granted only by a server-side admin function. Every public function checks identity and role first. | Automated tests: student A cannot read student B; unassigned counselor cannot read any student. |
 | CV-3 | Student files are stored in Convex storage but are never served through public storage URLs. Downloads go through an authenticated HTTP action that checks owner or an explicit share. | Test: a copied file URL does not work for another user. |
 | CV-4 | Scheduled functions and actions are at-most-once with no automatic retry. A job table with status, attempts, idempotency key and last error provides retry and recovery. | Kill an action mid-run; the job is retried once and not duplicated. |
 | CV-5 | Round-robin assignment: one mutation reads and advances the rotation pointer. | Two simultaneous requests get different counselors. |

@@ -473,7 +473,7 @@ Every entity has a stable ID, owner (where applicable), created and updated time
 
 | Group | Entities and key fields |
 | --- | --- |
-| Identity | User (role, Clerk subject), StudentProfile, CounselorProfile (active flag, Jira accountId, rotation order) |
+| Identity | User (role, Convex Auth account), StudentProfile, CounselorProfile (active flag, Jira accountId, rotation order) |
 | Student academics | QualificationRecord (curriculum, school, year, scale min and max, reported grades), SubjectGrade, LanguageEvidence (test, score, date, status) |
 | Catalog | Institution, Campus (address, coordinates, setting classification and evidence), Program (degree, duration, taxonomy codes), Intake, AdmissionRound, ApplicationRoute |
 | Evidence | SourceRecord (URL, retrieval time, content hash, Apify run ID, fetch method, status), EvidenceReference (excerpt, location), ExtractionRun (Bitdeer model, schema version, validator result), CoverageRecord |
@@ -724,7 +724,7 @@ At the start of the build, once accounts and keys exist (see sponsor-technical-r
 | Phase | Work | Evidence captured at the time |
 | --- | --- | --- |
 | 0 | Early technical checks; account capability notes | devlog entries |
-| 1 | Convex schema, Clerk auth, roles, access tests | Convex docs page |
+| 1 | Convex schema, Convex Auth, roles, access tests | Convex docs page |
 | 2 | Figma foundations and core screens; start real Notability and Mana use | Stage-log entries |
 | 3 | Ingestion: Actor, Bright Data, Bitdeer, validator, coverage | Run links, screenshots |
 | 4 | Intake, filters, ranking, costs, grade comparison | Test results |

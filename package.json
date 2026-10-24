@@ -2,13 +2,32 @@
   "name": "langkah",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.6" },
+  "engines": {
+    "node": ">=22.6"
+  },
   "scripts": {
-    "test": "node --experimental-strip-types --no-warnings --test \"tests/**/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "dev:web": "npm run dev -w web",
+    "dev:convex": "convex dev",
+    "test": "npm run test:rules && npm run test:convex",
+    "test:rules": "node --experimental-strip-types --no-warnings --test \"tests/rules/**/*.test.ts\"",
+    "test:convex": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p convex",
+    "setup:auth": "node scripts/setup-auth-keys.mjs",
+    "e2e:wp1": "node scripts/e2e-wp1.mjs"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@types/node": "^22.10.0",
-    "typescript": "^5.9.3"
+    "convex-test": "^0.0.65",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  },
+  "workspaces": [
+    "apps/web"
+  ],
+  "dependencies": {
+    "@auth/core": "^0.41.3",
+    "@convex-dev/auth": "^0.0.96",
+    "convex": "^1.48.0"
   }
 }

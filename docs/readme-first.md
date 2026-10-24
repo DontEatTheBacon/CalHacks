@@ -70,7 +70,7 @@ If documents disagree, `spec-v1.0.md` wins; then resolve the conflict explicitly
 | Files | PDF, Word (.doc/.docx), JPEG, PNG, HEIC/HEIF; 10 MB per file; JPEG copy for HEIC; private storage with authenticated download |
 | Retention | 10 years by default, configurable; student-requested deletion overrides |
 | Voice | Cartesia `ink-whisper` (Indonesian listening) and `sonic-3.6` (speaking); Claude replies in Indonesian; text fallback; off by default |
-| Stack | Next.js + TypeScript + Tailwind; Convex; Clerk; Bright Data SERP + Web Unlocker; **a custom Apify Actor (mandatory)**; Bitdeer Model Studio; Claude API; Factory Droid SDK worker; Atlassian Forge app on Jira; Cartesia; Frankfurter, Open-Meteo, GeoNames; hosting Convex cloud + frontend on Vercel or the MacBook + worker on the MacBook |
+| Stack | Next.js + TypeScript + Tailwind; Convex (with Convex Auth, replacing Clerk); Bright Data SERP + Web Unlocker; **a custom Apify Actor (mandatory)**; Bitdeer Model Studio; Claude API; Factory Droid SDK worker; Atlassian Forge app on Jira; Cartesia; Frankfurter, Open-Meteo, GeoNames; hosting Convex cloud + frontend on Vercel or the MacBook + worker on the MacBook |
 | Process tools | Figma (design), Mana and Notability (real development evidence, done by the user), GitHub |
 | Product name | Langkah |
 | Interviews | The user reports interviews with real people were done and the workflow is based on them. **The details have not been supplied.** ask for them (section 7) |
@@ -105,7 +105,7 @@ Suggested work packages:
 
 | WP | Content | Depends on | Notes |
 | --- | --- | --- | --- |
-| 1 | Convex schema, Clerk auth, roles, access tests, job table, file storage with authenticated download | repository, Clerk and Convex keys | Do first; others build on it |
+| 1 | Convex schema, Convex Auth, roles, access tests, job table, file storage with authenticated download | repository, Convex project | Do first; others build on it |
 | 2 | Rules engines as pure functions with unit tests: ranking, cost bands, climate and setting classes, grade comparison outcomes, deadline risk, round robin | spec, config | No keys needed; can start right after WP1 schema is agreed |
 | 3 | Apify Actor (queue, dedupe, link following, retries, Web Unlocker fallback, source packages) | Bright Data and Apify keys | Mandatory sponsor requirement |
 | 4 | Ingestion pipeline: SERP discovery, Actor run and webhook, Bitdeer extraction, validator, coverage records | WP1, WP3, Bitdeer key | Real retrieval; label cached vs fresh |
