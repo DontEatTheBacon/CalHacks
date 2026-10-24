@@ -134,3 +134,11 @@ Rule for this file: record only what actually happened, with the real date it wa
 - The user asked to skip Bitdeer. Claude explained the cost (the Bitdeer prize track is no longer entered) and the user confirmed.
 - Structured extraction now uses the Claude API with the same strict JSON schema and deterministic validator. Updated: spec (stack, diagram, ingestion steps, data model, sponsor summary, checks, risks; Appendix B row marked "not entered"), sponsor requirements (BT-* kept as engineering requirements), engineering detail, test/demo setup (no Bitdeer key), readme-first, award evidence plan.
 - Keys still needed for the data pipeline: Bright Data (key and two zone names), Apify token, Anthropic key.
+
+### 2026-10-24 — Bright Data early live check (BD-7) (Claude Code)
+- Stage: integration test.
+- The user created the Bright Data key and zones and set the key with `npx convex env set … "$(pbpaste)"`. Two extra copies of the key had been stored (one pasted twice, which would have broken requests); Claude checked their shape without printing values and removed them, since one key serves both zones.
+- Ran `scripts/check-brightdata.mjs` on all 12 institutions: 21/24 searches found an official page (after adding retries); 19/21 pages fetched plainly, 20/21 through Web Unlocker; one page (Penn State Harrisburg tuition) needed Web Unlocker; no Web Unlocker policy blocks. Details and pipeline consequences: `docs/research/brightdata-check-2026-10-24.md`.
+- Rework: the first run found only 14/24 because the SERP zone intermittently returns empty bodies, timeouts, unrelated results or redirect links; retries fixed it.
+- Approx. minutes (user):
+- Effectiveness 1–5 (user):
