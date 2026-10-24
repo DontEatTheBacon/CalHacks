@@ -129,3 +129,8 @@ Rule for this file: record only what actually happened, with the real date it wa
 - Not done: the visual design (comes from Figma); the dashboard does not yet show discovery results (needs ingestion and ranking).
 - Approx. minutes (user):
 - Effectiveness 1–5 (user):
+
+### 2026-10-24 — Decision: Bitdeer dropped, extraction moves to Claude
+- The user asked to skip Bitdeer. Claude explained the cost (the Bitdeer prize track is no longer entered) and the user confirmed.
+- Structured extraction now uses the Claude API with the same strict JSON schema and deterministic validator. Updated: spec (stack, diagram, ingestion steps, data model, sponsor summary, checks, risks; Appendix B row marked "not entered"), sponsor requirements (BT-* kept as engineering requirements), engineering detail, test/demo setup (no Bitdeer key), readme-first, award evidence plan.
+- Keys still needed for the data pipeline: Bright Data (key and two zone names), Apify token, Anthropic key.

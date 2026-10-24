@@ -239,7 +239,7 @@ Lexicographic ordering on banded outcomes. No weights and no match percentage. K
 
 Definitions:
 
-- **Major relevance:** each program is classified into an internal taxonomy mapped to CIP (US) and HECoS (GB) codes through a configuration table. Direct = in the student's chosen majors; Related = same broad field in the taxonomy; Other; Unknown if unclassified. Bitdeer proposes the classification with evidence; the mapping table is deterministic.
+- **Major relevance:** each program is classified into an internal taxonomy mapped to CIP (US) and HECoS (GB) codes through a configuration table. Direct = in the student's chosen majors; Related = same broad field in the taxonomy; Other; Unknown if unclassified. The extraction model (Claude) proposes the classification with evidence; the mapping table is deterministic.
 - **Academic status:** from the grade comparison (section 5.5). Needs confirmation ranks above Below because unknown is not a negative result.
 - **Budget fit:** annual comparable cost = tuition + mandatory fees + institution-published living estimate when available, converted with a sourced rate. "Within budget (costs incomplete)" means known costs fit but the living estimate or fees are missing. "Slightly over" means over by no more than a configured percentage (default 15%).
 - **Climate fit:** campus climate normals compared to configured bands (section 5.3.1).
@@ -394,7 +394,7 @@ These categories define what to research and display. They are not statements of
 | Files | Convex storage, private, served through an authenticated HTTP action |
 | Source discovery | Bright Data SERP API |
 | Collection | Custom Apify Actor, which calls Bright Data Web Unlocker when plain fetches fail |
-| Extraction | Bitdeer Model Studio inference with strict JSON-schema output |
+| Extraction | Claude API with structured JSON-schema output (Bitdeer dropped on 2026-10-24 by the user; the Bitdeer track is not entered) |
 | Advising | Claude API from Convex actions |
 | Agent work | Factory Droid SDK in a Node worker (Mac for the demo; Linux container path documented) |
 | Counselor automation | Atlassian Forge app on a Jira developer site |
@@ -412,8 +412,7 @@ flowchart TD
     convex["Convex: data, rules, jobs, HTTP endpoints"]
     bd["Bright Data SERP + Web Unlocker"]
     apify["Apify Actor: crawl orchestration"]
-    bitdeer["Bitdeer: structured extraction"]
-    claude["Claude API: grounded explanations and drafts"]
+    claude["Claude API: extraction, grounded explanations and drafts"]
     worker["Factory Droid worker: bounded research and checklists"]
     forge["Forge app in Jira: counselor tasks"]
     voice["Cartesia: STT + TTS"]
@@ -425,8 +424,8 @@ flowchart TD
     convex -->|"start run (async)"| apify
     apify -->|"unblock when needed"| bd
     apify -->|"webhook: run finished"| convex
-    convex --> bitdeer
-    bitdeer -->|"candidate records + evidence"| convex
+    convex -->|"extract"| claude
+    claude -->|"candidate records + evidence"| convex
     convex --> claude
     convex <-->|"job queue, proposals"| worker
     convex -->|"events (web trigger)"| forge
@@ -441,9 +440,9 @@ flowchart TD
 3. Convex starts an Apify Actor run asynchronously with the URL list and limits.
 4. The Actor queues, de-duplicates, follows same-domain links to a depth limit, retries with backoff, uses Web Unlocker for blocked pages, cleans text, hashes content, records per-page status, and outputs source packages.
 5. An Apify webhook (secret path, idempotent) notifies Convex; polling is the backup. Convex fetches the dataset by ID.
-6. Bitdeer extracts typed candidate fields with evidence excerpts and null-with-reason for unknowns. Long pages are chunked.
+6. Claude extracts typed candidate fields with evidence excerpts and null-with-reason for unknowns. Long pages are chunked.
 7. The deterministic validator checks: excerpt present in source; program identity; international-applicant applicability; currencies and periods; dates and timezones; grade-rule scope; consistency across sources. Invalid or ambiguous fields are rejected or flagged, never guessed.
-8. Convex stores versioned validated records with provenance (source, Apify run, Bitdeer call, validator result). Conflicts are preserved.
+8. Convex stores versioned validated records with provenance (source, Apify run, Claude extraction call, validator result). Conflicts are preserved.
 9. Explicit rules apply filters, grade comparisons, costs, ranking components and timeline dependencies.
 10. Claude explains results from those records and asks for missing student context.
 
@@ -476,7 +475,7 @@ Every entity has a stable ID, owner (where applicable), created and updated time
 | Identity | User (role, Convex Auth account), StudentProfile, CounselorProfile (active flag, Jira accountId, rotation order) |
 | Student academics | QualificationRecord (curriculum, school, year, scale min and max, reported grades), SubjectGrade, LanguageEvidence (test, score, date, status) |
 | Catalog | Institution, Campus (address, coordinates, setting classification and evidence), Program (degree, duration, taxonomy codes), Intake, AdmissionRound, ApplicationRoute |
-| Evidence | SourceRecord (URL, retrieval time, content hash, Apify run ID, fetch method, status), EvidenceReference (excerpt, location), ExtractionRun (Bitdeer model, schema version, validator result), CoverageRecord |
+| Evidence | SourceRecord (URL, retrieval time, content hash, Apify run ID, fetch method, status), EvidenceReference (excerpt, location), ExtractionRun (model, request ID, schema version, validator result), CoverageRecord |
 | Rules and results | PublishedRequirement, GradeEquivalencyRule (institution, qualification, intake, method, source, version), AcademicAssessment (inputs, rule version, outcome), CostItem, CurrencyRate (base, quote, date, source), MatchExplanation |
 | Timelines | PublishedMilestone, StudentApplication, PersonalizedTask, Dependency, ChangeEvent |
 | Counseling | CounselingRequest, Assignment, Conversation, Message, RotationPointer |
@@ -506,7 +505,7 @@ Every entity has a stable ID, owner (where applicable), created and updated time
 
 ## 8. Extraction and validation contracts
 
-### 8.1 Bitdeer output (strict JSON schema, all properties declared)
+### 8.1 Extraction output (strict JSON schema, all properties declared)
 
 For each source page, an array of candidate records of these types, each with `evidence` (verbatim excerpt) and `nullReason` where a value is null:
 
@@ -608,7 +607,7 @@ Design process: foundations and components first (colors with semantic states fo
 
 - Failures of any external service retain student input and show actionable messages.
 - Job table with retries, idempotency keys and visible states.
-- Rate limit handling for Bitdeer (default 100 requests per minute) and Apify.
+- Rate limit handling for the Claude API and Apify.
 - Cached versus fresh data labeled.
 
 ### 12.3 Privacy, retention and deletion
@@ -630,7 +629,7 @@ Design process: foundations and components first (colors with semantic states fo
 
 ### 12.6 Observability
 
-- An evidence view shows, for any displayed fact: source URL, retrieval time, Apify run, Bitdeer extraction, validator result, and cached versus fresh status.
+- An evidence view shows, for any displayed fact: source URL, retrieval time, Apify run, Claude extraction, validator result, and cached versus fresh status.
 
 ## 13. Acceptance scenarios
 
@@ -671,7 +670,7 @@ A fictional Indonesian 12th-grade student, clearly labeled fictional in the app,
 ### 14.2 Storyline (about 3 minutes)
 
 1. Intake (Indonesian UI), with voice for part of it.
-2. Live research on one program: show Bright Data discovery, the Apify run, Bitdeer extraction and the validated record with sources.
+2. Live research on one program: show Bright Data discovery, the Apify run, Claude extraction and the validated record with sources.
 3. Three sourced matches with four band chips, including a Needs-confirmation grade case.
 4. Compare and shortlist; the Factory agent builds the checklist and timeline with visible steps.
 5. Counseling requested before shortlisting; round-robin assignment; a Jira work item appears with an audit trail.
@@ -692,9 +691,8 @@ The normative testable requirements are in sponsor-technical-requirements.md. In
 | --- | --- |
 | Apify | Custom Actor performing all collection |
 | Bright Data | SERP discovery and Web Unlocker retrieval, essential and live |
-| Bitdeer | All structured extraction |
 | Convex | Backend, auth enforcement, jobs, files, round robin |
-| Anthropic | Grounded explanations, questions, plans, drafts |
+| Anthropic | Structured extraction, grounded explanations, questions, plans, drafts |
 | Factory | Triggered bounded agent work with visible steps |
 | Atlassian | Installed Forge app creating real Jira work |
 | Cartesia | Core Indonesian voice flow |
@@ -711,7 +709,7 @@ At the start of the build, once accounts and keys exist (see sponsor-technical-r
 
 1. 10 US and 10 UK university URLs through Bright Data Web Unlocker.
 2. A small Actor run reaching Convex through the webhook.
-3. Bitdeer extraction on three pages: schema compliance, context limits, model choice.
+3. Claude extraction on three pages: schema compliance and chunking.
 4. `ink-whisper` with recorded Indonesian speech.
 5. Node worker connecting to Convex with a scoped credential.
 6. Droid SDK run with custom tools only.
@@ -726,7 +724,7 @@ At the start of the build, once accounts and keys exist (see sponsor-technical-r
 | 0 | Early technical checks; account capability notes | devlog entries |
 | 1 | Convex schema, Convex Auth, roles, access tests | Convex docs page |
 | 2 | Figma foundations and core screens; start real Notability and Mana use | Stage-log entries |
-| 3 | Ingestion: Actor, Bright Data, Bitdeer, validator, coverage | Run links, screenshots |
+| 3 | Ingestion: Actor, Bright Data, Claude extraction, validator, coverage | Run links, screenshots |
 | 4 | Intake, filters, ranking, costs, grade comparison | Test results |
 | 5 | Program details, shortlist, timelines, application workspace | |
 | 6 | Round robin, messages, files, counselor views | |
@@ -734,14 +732,13 @@ At the start of the build, once accounts and keys exist (see sponsor-technical-r
 | 8 | Voice | Indonesian test results |
 | 9 | Acceptance scenarios, deployment, demo script, reset, sponsor evidence, submission package | Final docs |
 
-Sequencing follows risk: the integrations most likely to break the plan (Bright Data blocks, Apify to Convex, Bitdeer extraction, `ink-whisper`, worker access) are tested before dependent work.
+Sequencing follows risk: the integrations most likely to break the plan (Bright Data blocks, Apify to Convex, extraction quality, `ink-whisper`, worker access) are tested before dependent work.
 
 ## 18. Risk register
 
 | Risk | Effect | Mitigation |
 | --- | --- | --- |
 | Web Unlocker blocks or robots-blocks some university domains | Missing coverage | Test early; plain fetch inside the Actor for blocked domains; record coverage honestly; never use unofficial sources |
-| Bitdeer lacks documented context limits, Indonesian support, free credits, structured output per model | Extraction failures | Chunking, test models, schema validation, ask the sponsor |
 | `ink-whisper` Indonesian quality or streaming | Voice track weakened | Early test; browser recognition fallback; honest write-up |
 | Droid SDK has no tool allowlist | Unbounded agent | Custom tools only, disable built-ins, verify with `listTools` |
 | Convex scheduled actions are at-most-once | Lost jobs | Job table, retries, idempotency |
@@ -891,7 +888,7 @@ Carried over from the original technology-and-award-requirements.md. The text be
 | Apify Best Use | $2,000 / $1,000 / $800 / $400 / $400 | Meaningful use; product quality |
 | Apify Best Actor | $400 (combined Apify total $5,000) | Actor built for the event; conditions to be confirmed |
 | Convex Best Use | $5,000 cash | Not supplied |
-| Bitdeer Model Studio | 1st $500 credits + four gaming mice; 2nd $200 credits + shared LEGO Technic set | Innovation 30%, technical implementation 30%, Model Studio use 20%, impact and presentation 20% |
+| Bitdeer Model Studio (not entered; dropped 2026-10-24) | 1st $500 credits + four gaming mice; 2nd $200 credits + shared LEGO Technic set | Innovation 30%, technical implementation 30%, Model Studio use 20%, impact and presentation 20% |
 | Factory Droid SDK | $2,000 cash + Factory credits + swag | Real work inside the running product; designed trigger; permission and safety boundaries; visible plans, steps, results; weak: chatbot wrapper, slide-only demo |
 | Cartesia | Meta glasses (listed TBD) | Problem/originality, Cartesia use, execution, impact/responsibility, 25% each; voice core; two-minute demo-first presentation; short README; no keys in repo |
 | Atlassian Track 1 | AirPods Max headphones per winner | Creativity and quality; usefulness and impact; technical implementation and operational robustness; Forge app; repository link; demo video up to 3 minutes |

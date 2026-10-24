@@ -42,7 +42,7 @@ Read in this order:
 | 1 | `readme-first.md` | This handoff | — |
 | 2 | `spec-v1.0.md` | The consolidated specification: scope, decisions, rules, architecture, data model, agents, screens, non-functional requirements, acceptance scenarios, demo plan, risks, appendices (diagrams, sponsor table as supplied, links) | **Authoritative** |
 | 3 | `sponsor-technical-requirements.md` | The sponsor track criteria turned into testable app requirements (IDs like AP-1, BD-2, CV-3). Treat as binding design input | Normative companion |
-| 4 | `docs/engineering-detail.md` | Convex function surface, tables, Bitdeer extraction schema, Factory tools, Forge/Jira event and issue template, config values, cost and timeline rules, metrics | Normative companion |
+| 4 | `docs/engineering-detail.md` | Convex function surface, tables, extraction schema, Factory tools, Forge/Jira event and issue template, config values, cost and timeline rules, metrics | Normative companion |
 | 5 | `docs/figma-plan.md` | How the Figma design and pages are created and handed off; capability status; three routes | Normative companion |
 | 6 | `docs/design-delta.md` | What to take from the user's HTML mock, what changes, which screens to add. The mock is **guidance only**, not the final design | Guidance |
 | 7 | `docs/test-demo-setup.md` | Test strategy, fault-injection list, demo data (Nadia, three fictional counselors), reset, setup guide for the user, early live checks | Normative companion |
@@ -70,7 +70,7 @@ If documents disagree, `spec-v1.0.md` wins; then resolve the conflict explicitly
 | Files | PDF, Word (.doc/.docx), JPEG, PNG, HEIC/HEIF; 10 MB per file; JPEG copy for HEIC; private storage with authenticated download |
 | Retention | 10 years by default, configurable; student-requested deletion overrides |
 | Voice | Cartesia `ink-whisper` (Indonesian listening) and `sonic-3.6` (speaking); Claude replies in Indonesian; text fallback; off by default |
-| Stack | Next.js + TypeScript + Tailwind; Convex (with Convex Auth, replacing Clerk); Bright Data SERP + Web Unlocker; **a custom Apify Actor (mandatory)**; Bitdeer Model Studio; Claude API; Factory Droid SDK worker; Atlassian Forge app on Jira; Cartesia; Frankfurter, Open-Meteo, GeoNames; hosting Convex cloud + frontend on Vercel or the MacBook + worker on the MacBook |
+| Stack | Next.js + TypeScript + Tailwind; Convex (with Convex Auth, replacing Clerk); Bright Data SERP + Web Unlocker; **a custom Apify Actor (mandatory)**; Claude API (also does extraction; Bitdeer dropped 2026-10-24); Factory Droid SDK worker; Atlassian Forge app on Jira; Cartesia; Frankfurter, Open-Meteo, GeoNames; hosting Convex cloud + frontend on Vercel or the MacBook + worker on the MacBook |
 | Process tools | Figma (design), Mana and Notability (real development evidence, done by the user), GitHub |
 | Product name | Langkah |
 | Interviews | The user reports interviews with real people were done and the workflow is based on them. **The details have not been supplied.** ask for them (section 7) |
@@ -108,7 +108,7 @@ Suggested work packages:
 | 1 | Convex schema, Convex Auth, roles, access tests, job table, file storage with authenticated download | repository, Convex project | Do first; others build on it |
 | 2 | Rules engines as pure functions with unit tests: ranking, cost bands, climate and setting classes, grade comparison outcomes, deadline risk, round robin | spec, config | No keys needed; can start right after WP1 schema is agreed |
 | 3 | Apify Actor (queue, dedupe, link following, retries, Web Unlocker fallback, source packages) | Bright Data and Apify keys | Mandatory sponsor requirement |
-| 4 | Ingestion pipeline: SERP discovery, Actor run and webhook, Bitdeer extraction, validator, coverage records | WP1, WP3, Bitdeer key | Real retrieval; label cached vs fresh |
+| 4 | Ingestion pipeline: SERP discovery, Actor run and webhook, Claude extraction, validator, coverage records | WP1, WP3, Anthropic key | Real retrieval; label cached vs fresh |
 | 5 | Design in Figma, then frontend from the design: intake, discovery, program details, grade view, compare, dashboard, workspace, language planner, housing/immigration checklist | Figma route, WP1, WP2 | Use `docs/figma-plan.md` and `docs/design-delta.md` |
 | 6 | Counseling: round-robin assignment, messages, files and sharing, counselor views | WP1 | |
 | 7 | Claude advice layer with grounding checks and caps | WP1, WP2, Anthropic key | |
@@ -117,7 +117,7 @@ Suggested work packages:
 | 10 | Voice: Cartesia tokens, STT/TTS, transcript and fallbacks | WP5, Cartesia key | After the core flow works |
 | 11 | Demo: data seeding, reset command, test event, video scripts; sponsor evidence pages; README for the repository | all | |
 
-Order of risk: test the integrations most likely to break the plan first (Bright Data blocks, Apify-to-Convex webhook, Bitdeer extraction, `ink-whisper`, worker access to Convex).
+Order of risk: test the integrations most likely to break the plan first (Bright Data blocks, Apify-to-Convex webhook, extraction quality, `ink-whisper`, worker access to Convex).
 
 ## 9. Known unknowns and risks (all unverified)
 
@@ -127,7 +127,6 @@ Order of risk: test the integrations most likely to break the plan first (Bright
 - The Node worker's authenticated access to Convex is thinly documented; prototype it early.
 - Convex scheduled actions are at-most-once; the job table handles retries.
 - Convex file URLs are public to anyone with the link; use only the authenticated download path.
-- Bitdeer docs do not state context windows, Indonesian support or free credits, and the name "Model Studio" does not appear in its docs; whether strict JSON accepts `anyOf` is unverified.
 - The Atlassian track may require Rovo agents; the Convex track rules and Apify Best Actor conditions were never supplied.
 - Figma write access for Claude is unverified (section 5 and `docs/figma-plan.md`).
 - The first-batch institution facts, including whether each offers a bachelor's Economics program, are unverified.

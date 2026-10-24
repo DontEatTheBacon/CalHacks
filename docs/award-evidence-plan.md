@@ -86,13 +86,8 @@ Claude's part: give the user a short list of what is worth capturing at each pha
 | Official track rules | Not supplied; must be fetched and reviewed. | User supplies link; Claude reviews |
 | Evidence | Schema documentation, access-control documentation, persistent data and meaningful backend operations shown in the demo. | Claude |
 
-### Bitdeer AI Model Studio
-| Deliverable | Detail | Owner |
-| --- | --- | --- |
-| Actual inference | Real Model Studio calls in the extraction flow. | Claude |
-| Brief description | Concise implementation and limitations description. | Claude |
-| Demo | Source text → structured fields → saved university record. | Claude and user |
-Judging: innovation 30%, technical implementation 30%, Model Studio use 20%, impact and presentation 20%.
+### Bitdeer AI Model Studio — not entered
+Bitdeer was dropped on 2026-10-24 (user decision): extraction uses Claude, and the project does not enter the Bitdeer track. No Bitdeer deliverables.
 
 ### Factory Droid SDK
 | Deliverable | Detail | Owner |
@@ -154,7 +149,7 @@ No Azure or separate Microsoft account is required by the supplied criteria.
 | --- | --- |
 | Setup | Figma Education verification started, credit claims, Notability and Mana accounts live, `devlog.md` begun |
 | Design | Notability sketches and decisions; Figma stage entries (ideation, prototyping) with real minutes |
-| Data pipeline | Bright Data call logs and screenshots; Apify Actor and run links; Bitdeer source-to-record examples |
+| Data pipeline | Bright Data call logs and screenshots; Apify Actor and run links; Claude source-to-record examples |
 | Core app | Convex schema and access docs; Claude interactions; failure cases |
 | Agents | Factory run history; Forge/Jira action history |
 | Voice | Cartesia test results including Indonesian quality |

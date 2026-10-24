@@ -34,17 +34,19 @@ Process-evidence requirements (Figma, Mana, Notability documentation) are in awa
 | BD-6 | Cached data and newly retrieved data are labeled differently. No mocked or hardcoded results appear as live. | UI badge test; code review for hardcoded university data. |
 | BD-7 | RISK: Web Unlocker may return policy blocks for some public university domains before account verification, and obeys robots.txt. Run a 10-URL live test per country as the first technical check. If a domain is blocked, record it in coverage status and use plain fetch in the Actor for it, never an unofficial source. | Test result recorded in the devlog. |
 
-## 3. Bitdeer — structured extraction
+## 3. Structured extraction (Claude; Bitdeer dropped)
+
+Bitdeer was dropped on 2026-10-24 (user decision): extraction uses Claude, and the project does not enter the Bitdeer track. The IDs are kept so references stay valid; these are engineering requirements now, not a sponsor track.
 
 | ID | Requirement | Verification |
 | --- | --- | --- |
-| BT-1 | All extraction of program, cost, grade-policy and milestone fields from page text uses Bitdeer chat completions with strict JSON-schema output. | Every `ExtractionRun` references a Bitdeer call and model name. |
+| BT-1 | All extraction of program, cost, grade-policy and milestone fields from page text uses the Claude API with structured (JSON-schema) output. | Every `ExtractionRun` references a Claude request ID and model name. |
 | BT-2 | Each extracted field carries a verbatim evidence excerpt. A deterministic validator rejects any field whose excerpt is not found in the source text, or whose institution, campus, intake, or applicant-type scope is unclear. | Test pages with planted wrong values are rejected. |
-| BT-3 | Respect the default 100 requests per minute and token limits: a bounded queue with backoff for 429 and a stop on insufficient balance. | Load test with 200 pages does not drop records silently. |
-| BT-4 | Long pages are chunked because context limits are not documented. Chunk results are merged with conflicts preserved. | Test on a long requirements page. |
+| BT-3 | Respect Anthropic rate and spend limits: a bounded queue with backoff for 429/529 and a stop on billing errors. | Load test with 200 pages does not drop records silently. |
+| BT-4 | Very long pages are chunked to keep requests and cost bounded. Chunk results are merged with conflicts preserved. | Test on a long requirements page. |
 | BT-5 | Unknown values stay unknown; the model must be able to return null with a reason. | Schema allows null and tests confirm no filled-in guesses. |
 | BT-6 | UI and docs show source text → extracted fields → saved record. | Evidence view for one record. |
-| BT-7 | RISK: model choice among those in Bitdeer's catalog is recorded and tested for schema compliance, since structured-output support per model is not documented. | Test run per candidate model. |
+| BT-7 | The extraction model is set in config and recorded on every run; schema compliance is tested on real pages before ingestion runs at scale. | Test run on 3 real pages. |
 
 ## 4. Convex — backend, data and access control
 
@@ -127,7 +129,7 @@ Process-evidence requirements (Figma, Mana, Notability documentation) are in awa
 | --- | --- | --- |
 | X-1 | Every integration must be used in the running product or in the required development process. A mention in the README alone does not count. | Each sponsor has a `docs/sponsors/<name>.md` with trigger, contract, run example and limits. |
 | X-2 | No secrets in the repository, client code, logs, screenshots or recordings. | Secret scan before submission. |
-| X-3 | An evidence view in the app lets a reviewer see, for any shown fact: source URL, retrieval time, Apify run, Bitdeer extraction, validator result. | Used in the demo. |
+| X-3 | An evidence view in the app lets a reviewer see, for any shown fact: source URL, retrieval time, Apify run, Claude extraction, validator result. | Used in the demo. |
 | X-4 | Demo uses fictional students with real public university data, labeled. A reset script restores the demo state. | Reset test. |
 | X-5 | Failures in any external service keep the student's input and show an actionable message. | Fault tests per service. |
 
@@ -135,7 +137,7 @@ Process-evidence requirements (Figma, Mana, Notability documentation) are in awa
 
 1. 10 real US and 10 real UK university URLs through Bright Data Web Unlocker (BD-7).
 2. A small Actor run on the same URLs, reaching Convex through a webhook (AP-3 to AP-6).
-3. Bitdeer extraction on 3 pages: schema compliance and context limits (BT-3, BT-4, BT-7).
+3. Claude extraction on 3 pages: schema compliance and chunking (BT-1, BT-4, BT-7).
 4. `ink-whisper` with recorded Indonesian speech (CA-1).
 5. Node worker connecting to Convex with a scoped credential (CV-6).
 6. Droid SDK custom-tool-only run, confirming built-in tools are disabled (FD-2).
