@@ -4,12 +4,13 @@ from types import SimpleNamespace
 from dotenv import load_dotenv
 
 load_dotenv()  # real keys, only used by live tests
-os.environ.setdefault("GEMINI_API_KEY", "test-key")  # agent.py needs a key to import
+os.environ.setdefault("CLAUDE_KEY", "test-key")  # agent.py needs a key to import
 
 import httpx  # noqa: E402
 import pytest  # noqa: E402
 
 import agent  # noqa: E402
+import open_data  # noqa: E402
 
 LIVE = os.getenv("RUN_LIVE") == "1"
 
@@ -25,30 +26,37 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(autouse=True)
 def no_network(request, monkeypatch):
-    """Non-live tests fail loudly if they reach Gemini or Scorecard."""
+    """Non-live tests fail loudly if they reach Claude, Scorecard or the open-data APIs."""
     if request.node.get_closest_marker("live"):
         return
 
     def blocked(*args, **kwargs):
         raise AssertionError("test tried to use the network")
 
-    monkeypatch.setattr(agent.client.models, "generate_content", blocked)
+    monkeypatch.setattr(agent.client.messages, "create", blocked)
+    monkeypatch.setattr(agent.client.messages, "parse", blocked)
+    monkeypatch.setattr(agent.client.beta.messages, "create", blocked)
     monkeypatch.setattr(httpx, "get", blocked)
     monkeypatch.setattr(httpx, "post", blocked)
     monkeypatch.setattr(agent, "_resume_at", 0.0)  # no 429 cooldown carried between tests
+    monkeypatch.setattr(open_data, "find_university", lambda name: None)  # no university lookups unless a test sets one
 
 
 @pytest.fixture
-def scripted_gemini(monkeypatch):
-    """Replaces agent.generate with a script of responses (or exceptions); records each call's kwargs."""
-    gemini = SimpleNamespace(script=[], sent=[])
+def scripted_claude(monkeypatch):
+    """Replaces agent.generate and agent.generate_structured with one script of responses (or exceptions).
 
-    def fake_generate(**kwargs):
-        gemini.sent.append(kwargs)
-        item = gemini.script.pop(0)
+    Records each call's kwargs; structured calls also record the schema under "schema".
+    """
+    claude = SimpleNamespace(script=[], sent=[])
+
+    def next_response(kwargs):
+        claude.sent.append(kwargs)
+        item = claude.script.pop(0)
         if isinstance(item, Exception):
             raise item
         return item
 
-    monkeypatch.setattr(agent, "generate", fake_generate)
-    return gemini
+    monkeypatch.setattr(agent, "generate", lambda **kwargs: next_response(kwargs))
+    monkeypatch.setattr(agent, "generate_structured", lambda schema, **kwargs: next_response({**kwargs, "schema": schema}))
+    return claude

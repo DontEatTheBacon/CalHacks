@@ -1,13 +1,11 @@
 import string
 from datetime import date
-from types import SimpleNamespace
 
 import pytest
-from google.genai import errors
 
 import agent
 import tool_models as tm
-from samples import MINIMAL_RESULTS, TOOL_ARGS
+from samples import MINIMAL_RESULTS, TOOL_ARGS, parsed
 
 
 def test_every_tool_has_valid_sample_args():
@@ -24,13 +22,13 @@ def test_prompt_placeholders_are_fields_of_the_args_model(name):
     tool.prompt.format(**TOOL_ARGS[name])
 
 
-def test_declarations_match_the_tool_registry():
-    names = [declaration["name"] for declaration in agent.TOOL_DECLARATIONS]
+def test_tool_definitions_match_the_registry():
+    names = [definition["name"] for definition in agent.TOOL_DEFINITIONS]
     assert names == list(agent.TOOLS)
-    for declaration in agent.TOOL_DECLARATIONS:
-        tool = agent.TOOLS[declaration["name"]]
-        assert declaration["description"]
-        assert declaration["parameters"] == tool.args.model_json_schema()
+    for definition in agent.TOOL_DEFINITIONS:
+        tool = agent.TOOLS[definition["name"]]
+        assert definition["description"]
+        assert definition["input_schema"] == tool.args.model_json_schema()
 
 
 def test_run_tool_reports_unknown_tools_and_bad_args():
@@ -43,7 +41,7 @@ def test_run_tool_returns_json_ready_results(monkeypatch):
     prompts = []
     monkeypatch.setattr(agent, "ask_structured", lambda prompt, schema: prompts.append(prompt) or sample)
     result = agent.run_tool("find_scholarships", TOOL_ARGS["find_scholarships"])
-    assert result["scholarships"][0]["due_date"] == "2027-01-15"  # dates become strings for Gemini
+    assert result["scholarships"][0]["end_date"] == "2027-01-15"  # dates become strings in tool results
     assert TOOL_ARGS["find_scholarships"]["college"] in prompts[0]
 
 
@@ -55,59 +53,35 @@ def test_run_tool_turns_exceptions_into_errors(monkeypatch):
     assert agent.run_tool("get_housing_options", TOOL_ARGS["get_housing_options"]) == {"error": "boom"}
 
 
-def test_ask_structured_retries_invalid_answers(scripted_gemini):
-    valid = '{"original_gpa": 8.5, "converted_gpa": 3.7}'
-    scripted_gemini.script += [SimpleNamespace(text="not json"), SimpleNamespace(text=valid)]
+def test_ask_structured_retries_when_claude_gives_no_valid_answer(scripted_claude):
+    scripted_claude.script += [parsed(None, stop_reason="max_tokens"), parsed(tm.GpaConversion(original_gpa=8.5, converted_gpa=3.7))]
     result = agent.ask_structured("Convert", tm.GpaConversion)
     assert result.converted_gpa == 3.7
-    assert len(scripted_gemini.sent) == 2
-    assert str(date.today()) in scripted_gemini.sent[0]["contents"]
-    assert scripted_gemini.sent[0]["config"]["response_schema"] is tm.GpaConversion
+    assert len(scripted_claude.sent) == 2
+    assert scripted_claude.sent[0]["schema"] is tm.GpaConversion
+    assert str(date.today()) in scripted_claude.sent[0]["messages"][0]["content"]
 
 
-def test_ask_structured_gives_up_after_three_invalid_answers(scripted_gemini):
-    scripted_gemini.script += [SimpleNamespace(text="{}")] * 3
+def test_ask_structured_gives_up_after_three_tries(scripted_claude):
+    scripted_claude.script += [parsed(None)] * 3
     with pytest.raises(RuntimeError):
         agent.ask_structured("Convert", tm.GpaConversion)
 
 
-def server_error(code):
-    return errors.ServerError(code, {"error": {"code": code, "message": "x", "status": "X"}})
+def test_agent_turns_use_fallbacks_effort_and_caching(monkeypatch):
+    sent = []
+    monkeypatch.setattr(agent.client.beta.messages, "create", lambda **kwargs: sent.append(kwargs) or "ok")
+    assert agent.generate(system="s", messages=[]) == "ok"
+    request = sent[0]
+    assert request["model"] == agent.MODEL == "claude-opus-5-5"
+    assert request["betas"] == [agent.FALLBACK_BETA] and request["fallbacks"] == "default"
+    assert request["output_config"] == {"effort": agent.EFFORT}
+    assert request["cache_control"] == {"type": "ephemeral"}
 
 
-def test_generate_retries_503_with_backoff(monkeypatch):
-    sleeps, outcomes = [], [server_error(503), server_error(503), "ok"]
-
-    def fake_generate_content(**kwargs):
-        outcome = outcomes.pop(0)
-        if isinstance(outcome, Exception):
-            raise outcome
-        return outcome
-
-    monkeypatch.setattr(agent.client.models, "generate_content", fake_generate_content)
-    monkeypatch.setattr(agent.time, "sleep", sleeps.append)
-    assert agent.generate(contents="hi") == "ok"
-    assert sleeps == [1, 2]
-
-
-def test_generate_does_not_retry_other_errors(monkeypatch):
-    calls = []
-
-    def fail(**kwargs):
-        calls.append(1)
-        raise server_error(500)
-
-    monkeypatch.setattr(agent.client.models, "generate_content", fail)
-    with pytest.raises(errors.ServerError):
-        agent.generate(contents="hi")
-    assert len(calls) == 1
-
-
-def test_generate_gives_up_after_retries(monkeypatch):
-    def fail(**kwargs):
-        raise server_error(503)
-
-    monkeypatch.setattr(agent.client.models, "generate_content", fail)
-    monkeypatch.setattr(agent.time, "sleep", lambda seconds: None)
-    with pytest.raises(errors.ServerError):
-        agent.generate(contents="hi")
+def test_lookups_use_structured_outputs_at_low_effort(monkeypatch):
+    sent = []
+    monkeypatch.setattr(agent.client.messages, "parse", lambda **kwargs: sent.append(kwargs) or "ok")
+    assert agent.generate_structured(tm.GpaConversion, messages=[]) == "ok"
+    assert sent[0]["output_format"] is tm.GpaConversion
+    assert sent[0]["output_config"] == {"effort": "low"}

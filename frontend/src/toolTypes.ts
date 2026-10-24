@@ -3,6 +3,7 @@
 export interface ResourceLink {
   url: string
   label: string | null
+  official: boolean | null // set by code: on the college's own site or a government site
 }
 
 export interface GpaConversion {
@@ -23,17 +24,23 @@ export interface VisaRequirements {
   financial_proof_usd: number | null
   earliest_application: string | null
   earliest_entry: string | null
-  link: ResourceLink | null
+  link: ResourceLink
 }
 
 export interface TravelInfo {
+  name: string | null // e.g. 'MARTA train' or 'Taxi'
   banned_travel_forms: string[]
   travel_forms: string[] // one per leg, in order, e.g. 'plane'
   travel_duration: number[] // one per leg, in hours
   travel_destinations: string[] // where each leg ends, in order
   line_names: (string | null)[] // transit line per leg, null for walking or driving
+  link: ResourceLink // page with this option's fares
   fare_usd: number | null
   source: string | null
+}
+
+export interface RouteOptions {
+  routes: TravelInfo[] // fastest first
 }
 
 export interface FlightInfo {
@@ -44,15 +51,16 @@ export interface FlightInfo {
   typical_cost_usd: number | null
   airlines: string[]
   baggage_allowance: string | null
-  link: ResourceLink | null
+  link: ResourceLink
 }
 
 export interface Scholarship {
   name: string
   amount_usd: number | null
   eligibility: string
-  due_date: string | null // YYYY-MM-DD
-  link: ResourceLink | null
+  start_date: string | null // YYYY-MM-DD, when it opens
+  end_date: string | null // YYYY-MM-DD, the deadline
+  link: ResourceLink
   award_type: 'merit' | 'need' | 'merit_and_need' | 'other' | null
   renewable: boolean | null
   required_documents: string[]
@@ -70,7 +78,7 @@ export interface HousingInfo {
   application_deadline: string | null // YYYY-MM-DD
   deposit_usd: number | null
   meal_plan_required: boolean | null
-  link: ResourceLink | null
+  link: ResourceLink
 }
 
 export interface TestScore {
@@ -88,7 +96,8 @@ export interface LanguageRequirements {
 
 export interface Deadline {
   round: string
-  due_date: string | null // YYYY-MM-DD
+  start_date: string | null // YYYY-MM-DD, when it opens
+  end_date: string | null // YYYY-MM-DD, the deadline
 }
 
 export interface ApplicationDeadlines {
@@ -96,7 +105,7 @@ export interface ApplicationDeadlines {
   application_fee_usd: number | null
   required_documents: string[]
   decision_date: string | null // YYYY-MM-DD
-  link: ResourceLink | null
+  link: ResourceLink
 }
 
 export interface UniversityCost {
@@ -106,7 +115,7 @@ export interface UniversityCost {
   books_usd_per_year: number | null
   fees_usd_per_year: number | null
   source: string | null
-  link: ResourceLink | null
+  link: ResourceLink
 }
 
 export interface InsuranceRequirements {
@@ -115,7 +124,7 @@ export interface InsuranceRequirements {
   waiver_allowed: boolean
   waiver_deadline: string | null // YYYY-MM-DD
   minimum_coverage: string | null
-  link: ResourceLink | null
+  link: ResourceLink
 }
 
 export interface TestRequirements {
@@ -131,14 +140,41 @@ export interface CourseTransfer {
   evaluation_required: string | null
   evaluation_services: string[]
   evaluation_cost_usd: number | null
-  link: ResourceLink | null
+  link: ResourceLink
 }
 
 export interface WorkOptions {
   on_campus_hours_per_week: number | null
   post_study_work: string
   post_study_duration: string
+  on_campus_hourly_pay_usd: number
+  post_study_salary_usd: number
   off_campus_allowed: boolean | null
   stem_extension: string | null
   link: ResourceLink | null
+}
+
+export type StepType =
+  | 'gpa' | 'test' | 'language' | 'application' | 'scholarship' | 'cost'
+  | 'visa' | 'insurance' | 'housing' | 'transfer' | 'travel' | 'work'
+
+export interface ScheduledStep {
+  step_type: StepType
+  start_date: string // YYYY-MM-DD
+  end_date: string // YYYY-MM-DD
+  rule: string
+}
+
+export interface Schedule {
+  college: string
+  program_start: string // YYYY-MM-DD
+  steps: ScheduledStep[]
+}
+
+export interface ExchangeRate {
+  base: string // 'USD'
+  currency: string
+  rate: number // 1 USD in the home currency
+  date: string // YYYY-MM-DD
+  link: ResourceLink
 }

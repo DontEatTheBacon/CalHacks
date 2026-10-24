@@ -73,11 +73,11 @@ def test_living_cost_and_page_url():
     assert scorecard.page_url(PURDUE_MAIN) == "https://collegescorecard.ed.gov/school/?243780"
 
 
-def no_gemini(prompt, schema):
-    raise AssertionError("should not ask Gemini")
+def no_claude(prompt, schema):
+    raise AssertionError("should not ask Claude")
 
 
-def gemini_estimate(tuition=40000, living=15000, fees=1200):
+def claude_estimate(tuition=40000, living=15000, fees=1200):
     return lambda prompt, schema: tm.UniversityCost(
         tuition_usd_per_year=tuition, living_usd_per_year=living, fees_usd_per_year=fees,
         link=tm.ResourceLink(url="https://example.edu/costs"),
@@ -86,7 +86,7 @@ def gemini_estimate(tuition=40000, living=15000, fees=1200):
 
 def test_undergraduate_cost_comes_only_from_scorecard(monkeypatch):
     monkeypatch.setattr(scorecard, "find_school", lambda name: PURDUE_MAIN)
-    monkeypatch.setattr(agent, "ask_structured", no_gemini)
+    monkeypatch.setattr(agent, "ask_structured", no_claude)
     cost = agent.university_cost(tm.CollegeLevelArgs(college="Purdue University", level="undergraduate"))
     assert cost.tuition_usd_per_year == 28794
     assert cost.living_usd_per_year == 17150
@@ -97,18 +97,18 @@ def test_undergraduate_cost_comes_only_from_scorecard(monkeypatch):
 
 def test_graduate_cost_mixes_scorecard_living_with_estimated_tuition(monkeypatch):
     monkeypatch.setattr(scorecard, "find_school", lambda name: PURDUE_MAIN)
-    monkeypatch.setattr(agent, "ask_structured", gemini_estimate())
+    monkeypatch.setattr(agent, "ask_structured", claude_estimate())
     cost = agent.university_cost(tm.CollegeLevelArgs(college="Purdue University", level="graduate"))
     assert cost.tuition_usd_per_year == 40000
     assert cost.living_usd_per_year == 17150
     assert cost.fees_usd_per_year == 1200
-    assert "College Scorecard" in cost.source and "Gemini" in cost.source
+    assert "College Scorecard" in cost.source and "Claude" in cost.source
 
 
 @pytest.mark.parametrize("lookup", [lambda name: None, lambda name: (_ for _ in ()).throw(httpx.ConnectError("down"))])
-def test_cost_falls_back_to_gemini_without_scorecard(monkeypatch, lookup):
+def test_cost_falls_back_to_claude_without_scorecard(monkeypatch, lookup):
     monkeypatch.setattr(scorecard, "find_school", lookup)
-    monkeypatch.setattr(agent, "ask_structured", gemini_estimate())
+    monkeypatch.setattr(agent, "ask_structured", claude_estimate())
     cost = agent.university_cost(tm.CollegeLevelArgs(college="Monash University", level="graduate"))
     assert cost.tuition_usd_per_year == 40000
-    assert cost.source == "Gemini estimate"
+    assert cost.source == "Claude estimate"

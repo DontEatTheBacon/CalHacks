@@ -22,14 +22,13 @@ class Profile(SQLModel):
 
 # Timeline steps: each type has the shared fields plus its own key details.
 class StepBase(SQLModel):
+    ai_generated: bool = Field(default=True, description="Set by code, leave as is: false only when the step's facts came from an API")
     complete: bool = Field(default=False, description="Whether the student has finished this step; always false in a new plan")
     title: str
     description: str = Field(description="What the student should do, in one or two sentences")
     link: ResourceLink | None = Field(default=None, description="The link from the matching tool result, if any")
-
-
-class DatedStep(StepBase):
-    due_date: date | None = Field(default=None, description="When this must be done, as YYYY-MM-DD, or null if unknown")
+    start_date: date | None = Field(default=None, description="When to start this step, as YYYY-MM-DD; set by schedule_steps")
+    end_date: date | None = Field(default=None, description="When this step must be done by, as YYYY-MM-DD; set by schedule_steps")
 
 
 class GpaStep(StepBase):
@@ -38,7 +37,7 @@ class GpaStep(StepBase):
     original_gpa: float | None = Field(default=None, description="The GPA on the student's home scale")
 
 
-class VisaStep(DatedStep):
+class VisaStep(StepBase):
     type: Literal["visa"]
     visa_type: str
     documents: list[str]
@@ -46,7 +45,7 @@ class VisaStep(DatedStep):
     fee_usd: int | None = Field(default=None, description="Visa and related fees")
 
 
-class TravelStep(DatedStep):
+class TravelStep(StepBase):
     type: Literal["travel"]
     arrival_airport: str
     flight_cost_usd: int | None
@@ -55,7 +54,7 @@ class TravelStep(DatedStep):
     route: list[str] = Field(default=[], description="Ground legs from the airport to campus, e.g. 'MARTA Red Line to North Avenue'")
 
 
-class ScholarshipStep(DatedStep):
+class ScholarshipStep(StepBase):
     type: Literal["scholarship"]
     scholarship: str
     amount_usd: int | None
@@ -63,7 +62,7 @@ class ScholarshipStep(DatedStep):
     eligibility: str | None = Field(default=None, description="Who can apply, in one sentence")
 
 
-class HousingStep(DatedStep):
+class HousingStep(StepBase):
     type: Literal["housing"]
     option: str = Field(description="e.g. 'On-campus residence'")
     monthly_cost_usd: int | None
@@ -71,14 +70,14 @@ class HousingStep(DatedStep):
     deposit_usd: int | None = Field(default=None, description="Housing deposit")
 
 
-class LanguageStep(DatedStep):
+class LanguageStep(StepBase):
     type: Literal["language"]
     test: str
     minimum_score: str
     waiver_possible: bool | None = Field(default=None, description="Whether the student could get this waived")
 
 
-class ApplicationStep(DatedStep):
+class ApplicationStep(StepBase):
     type: Literal["application"]
     round: str
     application_fee_usd: int | None
@@ -86,7 +85,7 @@ class ApplicationStep(DatedStep):
     required_documents: list[str] = Field(default=[], description="Documents to submit with the application")
 
 
-class CostStep(DatedStep):
+class CostStep(StepBase):
     type: Literal["cost"]
     amount_usd: int = Field(description="Amount to pay or show as funds")
     link: ResourceLink = Field(description="The page listing these costs")
@@ -94,7 +93,7 @@ class CostStep(DatedStep):
     living_usd: int | None = Field(default=None, description="Living-cost part of the amount")
 
 
-class InsuranceStep(DatedStep):
+class InsuranceStep(StepBase):
     type: Literal["insurance"]
     plan: str
     annual_cost_usd: int | None
@@ -102,13 +101,13 @@ class InsuranceStep(DatedStep):
     waiver_allowed: bool | None = Field(default=None, description="Whether outside insurance can replace the school plan")
 
 
-class TestStep(DatedStep):
+class TestStep(StepBase):
     type: Literal["test"]
     test: str = Field(description="Standardized test, e.g. 'GRE'")
     target_score: str | None = Field(default=None, description="Typical score of admitted students")
 
 
-class TransferStep(DatedStep):
+class TransferStep(StepBase):
     type: Literal["transfer"]
     evaluation: str | None = Field(description="Credential evaluation needed, if any")
     max_credits: int | None = Field(default=None, description="Most credits that can transfer")
@@ -129,7 +128,7 @@ Step = Annotated[
     Field(discriminator="type"),
 ]
 
-# UPDATE LATER: hard-coded timeline order; factor in due_date once dates are reliable.
+# UPDATE LATER: hard-coded timeline order; factor in end_date now that schedule_steps sets it.
 STEP_ORDER = [
     "gpa", "test", "language", "application", "scholarship", "cost",
     "visa", "insurance", "housing", "transfer", "travel", "work",
@@ -141,6 +140,8 @@ class PlanMetrics(SQLModel):
     program_years: float = Field(gt=0, description="Length of the program in years")
     cost_per_year_usd: int = Field(ge=0, description="Tuition plus living costs per year")
     work_pay_per_year_usd: int = Field(ge=0, description="Expected pay per year from allowed part-time work while studying")
+    home_currency: str | None = Field(default=None, description="Set by code from get_exchange_rate; leave empty")
+    usd_to_home_rate: float | None = Field(default=None, description="Set by code from get_exchange_rate; leave empty")
     post_study_salary_usd: int | None = Field(default=None, description="Typical starting salary per year for this major after graduating")
 
     # Totals are calculated rather than asked for, so they always match the yearly figures.
@@ -160,6 +161,7 @@ class Plan(SQLModel):
     steps: list[Step]
     fit_reason: str | None = Field(default=None, description="Why this college fits the student, in one sentence")
     metrics: PlanMetrics | None = Field(default=None, description="Summary numbers for this plan; always fill these in")
+    school_website: ResourceLink | None = Field(default=None, description="Set by code from the official university list; leave empty")
 
     @model_validator(mode="after")
     def order_steps(self):
@@ -167,8 +169,16 @@ class Plan(SQLModel):
         return self
 
 
+class ConsideredCollege(SQLModel):
+    school: str
+    cost_per_year_usd: int | None = Field(default=None, description="From get_university_cost, if checked")
+    chosen: bool = Field(description="Whether it made the final plans")
+    reason: str = Field(description="Why it was kept or dropped, in one sentence, e.g. 'Over budget by $7,000 a year'")
+
+
 class Plans(SQLModel):
     plans: list[Plan] = Field(min_length=1, description="One plan per college, best fit first")
+    considered: list[ConsideredCollege] = Field(default=[], description="Every shortlisted college, including the ones dropped, and why")
 
 
 # Events streamed from /api/plan/stream, one JSON object per line.
@@ -176,6 +186,7 @@ class ToolCallEvent(SQLModel):
     type: Literal["tool_call"] = "tool_call"
     id: int  # matches the ToolResultEvent for this call
     name: str
+    school: str | None = None  # the college this lookup is for; None for general ones like visa or exchange rate
     args: dict[str, Any]
 
 
@@ -183,14 +194,42 @@ class ToolResultEvent(SQLModel):
     type: Literal["tool_result"] = "tool_result"
     id: int
     name: str
+    school: str | None = None
+    ai_generated: bool  # true when the result came from Claude rather than an API or our own code
     result: dict[str, Any]
 
 
 class PlansEvent(SQLModel):
     type: Literal["plans"] = "plans"
     plans: list[Plan]
+    considered: list[ConsideredCollege] = []
 
 
 class ErrorEvent(SQLModel):
     type: Literal["error"] = "error"
     detail: str
+
+
+# Option lists for the profile form, from /api/options/*.
+class SchoolOption(SQLModel):
+    name: str
+    country: str
+    website: str | None
+    domains: list[str]
+
+
+class TermOptions(SQLModel):
+    seasons: list[str]
+    years: list[int]
+
+
+# Redoing one step: every version the student rejected (newest last) and an optional note on what to change.
+class StepRedoRequest(SQLModel):
+    profile: Profile
+    school: str
+    rejected: list[Step] = Field(min_length=1, description="Rejected versions of this step, newest last")
+    feedback: str | None = Field(default=None, max_length=500, description="What the student wants instead, if anything")
+
+
+class StepRedoResult(SQLModel):
+    step: Step

@@ -1,4 +1,4 @@
-"""Calls the real APIs; run with RUN_LIVE=1 (uses Gemini quota and the Scorecard DEMO_KEY)."""
+"""Calls the real APIs; run with RUN_LIVE=1 (uses Claude credits and the Scorecard DEMO_KEY)."""
 
 import pytest
 

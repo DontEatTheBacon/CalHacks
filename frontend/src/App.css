@@ -24,6 +24,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -31,33 +35,66 @@ body {
   font: 16px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-.app {
-  max-width: 680px;
+/* Page layout: profile on the left, results on the right. */
+.page {
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 56px 20px 96px;
+  padding: 48px 20px 96px;
 }
 
-.app > * + * {
-  margin-top: 48px;
+.masthead {
+  max-width: 640px;
+  margin-bottom: 40px;
 }
 
-/* Header */
-.app-header h1 {
+.masthead h1 {
   margin: 0 0 8px;
   font-size: 1.75rem;
   font-weight: 600;
 }
 
-.app-header p {
+.masthead p {
   margin: 0;
   color: var(--muted);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* Profile form */
 .profile-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px 20px;
+  gap: 14px;
+}
+
+.profile-form .section-title {
+  margin-bottom: 2px;
 }
 
 .field {
@@ -84,17 +121,48 @@ body {
   border-color: var(--text);
 }
 
-.submit-button {
-  justify-self: start;
-  align-self: end;
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.toggle input {
+  margin: 0;
+  accent-color: var(--text);
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.submit-button,
+.secondary-button {
   font: inherit;
   font-weight: 500;
   padding: 9px 18px;
   border: 1px solid var(--text);
   border-radius: 6px;
+  cursor: pointer;
+}
+
+.submit-button {
   background: var(--text);
   color: var(--bg);
-  cursor: pointer;
+}
+
+.secondary-button {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.secondary-button:hover {
+  border-color: var(--text);
 }
 
 .submit-button:disabled {
@@ -102,10 +170,43 @@ body {
   cursor: progress;
 }
 
-.section-title {
-  margin: 0 0 12px;
-  font-size: 1rem;
+/* Results column */
+.results > * + * {
+  margin-top: 24px;
+}
+
+.results-status,
+.waiting {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  padding: 28px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+.empty-title {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 1.05rem;
   font-weight: 600;
+}
+
+.empty p {
+  margin: 0;
+  max-width: 56ch;
+}
+
+.error {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 2px solid var(--danger);
+  color: var(--danger);
 }
 
 /* Agent activity */
@@ -121,14 +222,11 @@ body {
   grid-template-columns: 20px 1fr;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
+  animation: fade-in 0.25s ease-out;
 }
 
 .activity-item p {
   margin: 0;
-}
-
-.activity-item {
-  animation: fade-in 0.25s ease-out;
 }
 
 @keyframes fade-in {
@@ -138,7 +236,7 @@ body {
   }
 }
 
-/* The status marker: an ellipsis while running, a tick when done, a cross on failure. */
+/* The status marker: a dot while running, a tick when done, a cross on failure. */
 .activity-dot::before {
   color: var(--muted);
   content: '·';
@@ -172,95 +270,42 @@ body {
   font-size: 0.95rem;
 }
 
-/* Error */
-.error {
-  margin: 0;
-  padding: 10px 14px;
-  border-left: 2px solid var(--danger);
-  color: var(--danger);
-}
-
-/* Timeline */
-.timeline-eyebrow {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.timeline-school {
-  margin: 2px 0 20px;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.timeline-empty {
-  color: var(--muted);
-}
-
-.timeline-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  counter-reset: step;
-  border-top: 1px solid var(--line);
-}
-
-.step {
-  counter-increment: step;
-  position: relative;
-  padding: 18px 0 18px 32px;
-  border-bottom: 1px solid var(--line);
-}
-
-.step::before {
-  content: counter(step);
-  position: absolute;
-  left: 0;
-  top: 18px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.step-header {
+/* Plan header */
+.plan-header {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 0.875rem;
-  color: var(--muted);
+  gap: 16px;
 }
 
-.step-title {
-  margin: 2px 0 4px;
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.step-description {
+.plan-eyebrow {
   margin: 0;
-}
-
-.step-facts {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.875rem;
 }
 
-.step-fact {
-  display: inline;
+.plan-school {
+  margin: 2px 0 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
-.step-fact + .step-fact::before {
-  content: ' · ';
+.plan-fit {
+  margin: 8px 0 0;
+  max-width: 64ch;
+  color: var(--muted);
 }
 
-/* Plan navigation */
+.plan-empty {
+  color: var(--muted);
+}
+
 .plans-nav {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .plans-arrow {
@@ -289,6 +334,338 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Plan summary */
+.plan-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px 20px;
+  margin: 20px 0 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-metric {
+  margin: 0;
+}
+
+.plan-metric-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.plan-metric-value {
+  margin: 2px 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-progress-bar {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+}
+
+.plan-progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--text);
+  transition: width 0.2s ease-out;
+}
+
+/* Timeline overview axis */
+.axis {
+  margin: 40px 6px 44px;
+}
+
+.axis-track {
+  position: relative;
+  height: 1px;
+  background: var(--line);
+}
+
+.axis-tick {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 7px;
+  background: var(--line);
+}
+
+.axis-tick-label {
+  position: absolute;
+  top: 12px;
+  left: 3px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.axis-marker {
+  position: absolute;
+  top: -12px;
+  width: 0;
+  height: 25px;
+  border-left: 1px solid var(--text);
+}
+
+.axis-marker--start {
+  border-left-style: dashed;
+}
+
+.axis-marker-label {
+  position: absolute;
+  bottom: 27px;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.axis-dot {
+  position: absolute;
+  top: -5px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5px;
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  background: var(--bg);
+  transition: transform 0.15s ease-out;
+}
+
+.axis-dot--done {
+  background: var(--text);
+}
+
+.axis-dot:hover,
+.axis-dot:focus-visible {
+  transform: scale(1.35);
+  outline: none;
+}
+
+/* Timeline: months, then steps along a rail */
+.tl,
+.tl-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tl-month + .tl-month {
+  margin-top: 28px;
+}
+
+.tl-month-label {
+  margin: 0 0 4px 72px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tl-items {
+  position: relative;
+}
+
+/* The rail runs down the middle of the node column. */
+.tl-items::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 59.5px;
+  width: 1px;
+  background: var(--line);
+}
+
+.tl-item {
+  display: grid;
+  grid-template-columns: 48px 24px minmax(0, 1fr);
+  padding: 14px 0;
+  scroll-margin-top: 24px;
+}
+
+.tl-date {
+  padding-right: 6px;
+  text-align: right;
+  line-height: 1.15;
+}
+
+.tl-day {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-day--none {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.tl-weekday {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.tl-node {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  width: 11px;
+  height: 11px;
+  margin-top: 6px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.step--complete .tl-node {
+  border-color: var(--text);
+  background: var(--text);
+}
+
+.step--overdue .tl-node {
+  border-color: var(--danger);
+}
+
+.tl-milestone {
+  padding: 8px 0;
+}
+
+.tl-milestone .tl-node {
+  border-color: var(--text);
+  border-radius: 2px;
+  background: var(--text);
+  transform: rotate(45deg);
+}
+
+.tl-milestone--today .tl-node {
+  background: var(--bg);
+}
+
+.tl-milestone-label {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Step content */
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.step-overdue {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.step-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.step-done input {
+  margin: 0;
+  accent-color: var(--text);
+  cursor: pointer;
+}
+
+.step-title {
+  margin: 2px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Step details open from the title; a small chevron shows which way. */
+.step-details summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.step-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.step-details summary::after {
+  content: '›';
+  color: var(--muted);
+  font-weight: 400;
+  transition: transform 0.15s ease-out;
+}
+
+.step-details[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.step-details summary:hover::after,
+.step-details summary:focus-visible::after {
+  color: var(--text);
+}
+
+.step-details summary:focus-visible {
+  outline: 1px solid var(--line);
+  outline-offset: 2px;
+}
+
+.step-body {
+  margin-top: 6px;
+}
+
+.step-description {
+  margin: 0;
+}
+
+.step-facts {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.step-fact {
+  display: inline;
+}
+
+.step-fact + .step-fact::before {
+  content: ' · ';
+}
+
+.step--complete .step-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.step--complete .step-description,
+.step--complete .step-facts,
+.step--complete .step-link {
+  opacity: 0.6;
+}
+
 /* Resource links */
 .step-link,
 .activity-link {
@@ -304,7 +681,192 @@ body {
   margin-top: 6px;
 }
 
+.activity-link + .activity-link {
+  margin-left: 14px;
+}
+
 .step-link:hover,
 .activity-link:hover {
   text-decoration-color: var(--text);
+}
+
+/* Date windows */
+.axis-range {
+  position: absolute;
+  top: -1px;
+  height: 3px;
+  background: var(--muted);
+  opacity: 0.45;
+}
+
+.axis-range--done {
+  background: var(--text);
+  opacity: 0.8;
+}
+
+.step-window {
+  font-variant-numeric: tabular-nums;
+}
+
+.step-open {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Open data: official links, website, home currency */
+.link-official {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.plan-website {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+
+.plan-metric-converted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* AI-generated disclaimers */
+.source-note {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.plan-disclaimer {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border-left: 2px solid var(--line);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* Activity grouped by college */
+.activity-group + .activity-group {
+  margin-top: 18px;
+}
+
+.activity-school {
+  margin: 0 0 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.activity-thinking {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Colleges considered */
+.considered {
+  margin: 16px 0 0;
+  font-size: 0.9rem;
+}
+
+.considered summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.considered-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.considered-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.considered-mark {
+  color: var(--muted);
+}
+
+.considered-item--chosen .considered-mark,
+.considered-item--chosen .considered-school {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.considered-cost {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.considered-reason {
+  grid-column: 2 / -1;
+  color: var(--muted);
+}
+
+/* Grouped fields: start term as season + year */
+.field-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.field-group .field-label {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Redoing a step */
+.redo {
+  margin-top: 10px;
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  color: var(--text);
+  text-decoration-color: var(--text);
+}
+
+.redo-form {
+  display: grid;
+  gap: 10px;
+  max-width: 480px;
+}
+
+.redo-form textarea {
+  resize: vertical;
+}
+
+.redo-form .submit-button,
+.redo-form .secondary-button {
+  padding: 6px 14px;
+  font-size: 0.9rem;
 }

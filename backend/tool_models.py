@@ -50,12 +50,35 @@ class TransferArgs(SQLModel):
     college: str = Field(description="College the student will attend")
 
 
-# Tool results; used as Gemini's response_schema.
+StepType = Literal[
+    "gpa", "test", "language", "application", "scholarship", "cost",
+    "visa", "insurance", "housing", "transfer", "travel", "work",
+]
+
+
+class FixedDate(SQLModel):
+    step_type: StepType = Field(description="Which step this rigid date belongs to")
+    start_date: date | None = Field(default=None, description="When it opens, as YYYY-MM-DD, if known")
+    end_date: date = Field(description="The deadline, as YYYY-MM-DD")
+
+
+class ExchangeArgs(SQLModel):
+    currency: str = Field(min_length=3, max_length=3, description="ISO 4217 code of the student's home currency, e.g. 'INR'")
+
+
+class ScheduleArgs(SQLModel):
+    college: str = Field(description="College the plan is for")
+    start_term: str = Field(description="When the program starts, e.g. 'February 2027' or 'Fall 2027'")
+    fixed_dates: list[FixedDate] = Field(default=[], description="Rigid deadlines from earlier tool results, e.g. the application deadline from get_application_deadlines and scholarship deadlines from find_scholarships")
+
+
+# Tool results; used as the structured-output schema for Claude lookups.
 
 
 class ResourceLink(SQLModel):
     url: str = Field(description="Link to the resouce or application for an item or any useful information")
     label: str | None = Field(default=None, description="Short name of the page, e.g. 'Graduate admissions'")
+    official: bool | None = Field(default=None, description="Set by code, leave empty: whether the link is on the college's own website or a government site")
 
 
 class GpaConversion(SQLModel):
@@ -88,7 +111,7 @@ class TravelInfo(SQLModel):
     link: ResourceLink = Field(description="Page with this option's fares, e.g. the transit agency's fare page or the airport's ground transport page")
     line_names: list[str | None] = Field(default=[], description="Transit line for each leg in order, e.g. 'MARTA Red Line', or null for walking or driving")
     fare_usd: float | None = Field(default=None, description="Total public transport fare for the route")
-    source: str | None = Field(default=None, description="Where the route came from, e.g. 'Gemini estimate'")
+    source: str | None = Field(default=None, description="Where the route came from, e.g. 'Claude estimate'")
 
 
 class RouteOptions(SQLModel):
@@ -110,7 +133,8 @@ class Scholarship(SQLModel):
     name: str
     amount_usd: int | None = Field(description="Award per year, if known")
     eligibility: str = Field(description="Who can apply, in one sentence")
-    due_date: date | None = Field(description="Application deadline as YYYY-MM-DD, or null if unknown")
+    start_date: date | None = Field(default=None, description="When applications open, as YYYY-MM-DD, or null if unknown")
+    end_date: date | None = Field(description="Application deadline as YYYY-MM-DD, or null if unknown")
     link: ResourceLink = Field(description="The scholarship's own application or information page, stating the award amount")
     award_type: Literal["merit", "need", "merit_and_need", "other"] | None = Field(default=None, description="What the award is based on")
     renewable: bool | None = Field(default=None, description="Whether the award renews each year")
@@ -147,7 +171,8 @@ class LanguageRequirements(SQLModel):
 
 class Deadline(SQLModel):
     round: str = Field(description="e.g. 'Early Action' or 'Regular Decision'")
-    due_date: date | None = Field(description="Deadline as YYYY-MM-DD, or null if unknown")
+    start_date: date | None = Field(default=None, description="When this round opens, as YYYY-MM-DD, or null if unknown")
+    end_date: date | None = Field(description="Deadline as YYYY-MM-DD, or null if unknown")
 
 
 class ApplicationDeadlines(SQLModel):
@@ -164,7 +189,7 @@ class UniversityCost(SQLModel):
     room_board_usd_per_year: int | None = Field(default=None, description="On-campus room and board")
     books_usd_per_year: int | None = Field(default=None, description="Books and supplies")
     fees_usd_per_year: int | None = Field(default=None, description="Mandatory fees not included in tuition")
-    source: str | None = Field(default=None, description="Where the figures came from, e.g. 'College Scorecard' or 'Gemini estimate'")
+    source: str | None = Field(default=None, description="Where the figures came from, e.g. 'College Scorecard' or 'Claude estimate'")
     link: ResourceLink = Field(description="The page listing these costs, e.g. the college's cost of attendance page")
 
 
@@ -202,3 +227,24 @@ class WorkOptions(SQLModel):
     off_campus_allowed: bool | None = Field(default=None, description="Whether off-campus work is allowed during studies, e.g. through CPT")
     stem_extension: str | None = Field(default=None, description="Extra post-study work time for STEM graduates, if any")
     link: ResourceLink | None = Field(default=None, description="Official page on student work rights")
+
+
+class ScheduledStep(SQLModel):
+    step_type: StepType
+    start_date: date
+    end_date: date
+    rule: str = Field(description="How the dates were set, e.g. 'Fixed deadline' or '120 to 60 days before the program starts'")
+
+
+class Schedule(SQLModel):
+    college: str
+    program_start: date
+    steps: list[ScheduledStep]
+
+
+class ExchangeRate(SQLModel):
+    base: str = "USD"
+    currency: str
+    rate: float = Field(description="How much 1 USD is worth in the home currency")
+    date: date
+    link: ResourceLink

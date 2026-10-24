@@ -1,11 +1,13 @@
 import { ExternalLink } from './ExternalLink'
-import { duration, formatDate, list, usd } from './format'
+import { duration, formatDate, list, money, usd } from './format'
 import type * as T from './toolTypes'
 
 export interface ToolActivity {
   id: number
   name: string
+  school: string | null // the college this lookup is for; null for general ones
   result?: Record<string, unknown>
+  aiGenerated?: boolean
 }
 
 // What the agent is doing while each tool runs.
@@ -23,6 +25,8 @@ const LABELS: Record<string, string> = {
   get_standardized_tests: 'Checking standardized tests',
   check_course_transfer: 'Checking credit transfer',
   get_work_options: 'Checking work rights',
+  schedule_steps: 'Setting your dates',
+  get_exchange_rate: 'Checking the exchange rate',
 }
 
 // A plain-English summary of each tool's result; falls back if the result has an unexpected shape.
@@ -51,17 +55,11 @@ function describe(name: string, result: Record<string, unknown>): string {
       return `Fly from ${r.departure_airport} to ${r.arrival_airport} ${via}, about ${duration(r.flight_hours)}.`
     }
     case 'get_ground_route': {
-      const r = result as unknown as T.TravelInfo
-      const legs = r.travel_forms.map((form, i) => {
-        const to = r.travel_destinations[i] ?? 'the next stop'
-        const line = r.line_names[i]
-        if (form === 'walk') return `walk to ${to}`
-        return line ? `take the ${line} (${form}) to ${to}` : `${form} to ${to}`
-      })
-      const total = r.travel_duration.reduce((sum, leg) => sum + leg, 0)
-      const banned = r.banned_travel_forms.length ? ` Not allowed: ${list(r.banned_travel_forms)}.` : ''
-      const sentence = list(legs)
-      return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}, about ${duration(total)} in total.${banned}`
+      const r = result as unknown as T.RouteOptions
+      if (!r.routes.length) return 'No routes found yet.'
+      const [fastest, ...others] = r.routes
+      const alternatives = others.map((route) => `${route.name ?? list(route.travel_forms)} (${routeCost(route)})`)
+      return `${describeRoute(fastest)}${alternatives.length ? ` Other options: ${list(alternatives)}.` : ''}`
     }
     case 'find_scholarships': {
       const r = result as unknown as T.Scholarships
@@ -80,8 +78,8 @@ function describe(name: string, result: Record<string, unknown>): string {
     }
     case 'get_application_deadlines': {
       const r = result as unknown as T.ApplicationDeadlines
-      const next = r.deadlines.find((d) => d.due_date)
-      const due = next ? `${next.round} closes ${formatDate(next.due_date!)}` : 'Deadlines vary by program'
+      const next = r.deadlines.find((d) => d.end_date)
+      const due = next ? `${next.round} closes ${formatDate(next.end_date!)}` : 'Deadlines vary by program'
       return `${due}. The application fee is ${usd(r.application_fee_usd)}.`
     }
     case 'get_university_cost': {
@@ -108,20 +106,87 @@ function describe(name: string, result: Record<string, unknown>): string {
     case 'get_work_options': {
       const r = result as unknown as T.WorkOptions
       const hours = r.on_campus_hours_per_week ? `${r.on_campus_hours_per_week} hours a week during term` : 'part-time during term'
-      return `You can work ${hours}, then use ${r.post_study_work} for ${r.post_study_duration}.`
+      return (
+        `You can work ${hours} at about ${usd(r.on_campus_hourly_pay_usd)} an hour, then use ${r.post_study_work} ` +
+        `for ${r.post_study_duration}. Typical starting salary: ${usd(r.post_study_salary_usd)} a year.`
+      )
+    }
+    case 'get_exchange_rate': {
+      const r = result as unknown as T.ExchangeRate
+      return `$1 is ${money(r.rate, r.currency, 2)} at the European Central Bank rate on ${formatDate(r.date)}.`
+    }
+    case 'schedule_steps': {
+      const r = result as unknown as T.Schedule
+      const fixed = r.steps.filter((step) => step.rule === 'Fixed deadline').length
+      return `Dated all ${r.steps.length} steps, counting back from ${formatDate(r.program_start)}${fixed ? ` around ${fixed} fixed deadline${fixed === 1 ? '' : 's'}` : ''}.`
     }
     default:
       return 'Done.'
   }
 }
 
+// One ground route as a sentence: its legs, total time and fare.
+function describeRoute(route: T.TravelInfo): string {
+  const legs = route.travel_forms.map((form, i) => {
+    const to = route.travel_destinations[i] ?? 'the next stop'
+    const line = route.line_names[i]
+    if (form === 'walk') return `walk to ${to}`
+    return line ? `take the ${line} (${form}) to ${to}` : `${form} to ${to}`
+  })
+  const sentence = list(legs)
+  const start = route.name ? `${route.name}: ${sentence}` : `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}`
+  const banned = route.banned_travel_forms.length ? ` Not allowed: ${list(route.banned_travel_forms)}.` : ''
+  return `${start}, ${routeCost(route)}.${banned}`
+}
+
+function routeCost(route: T.TravelInfo): string {
+  const total = route.travel_duration.reduce((sum, leg) => sum + leg, 0)
+  return `about ${duration(total)}${route.fare_usd != null ? `, ${usd(route.fare_usd)}` : ''}`
+}
+
+// Links to show for a result: one per scholarship or route option, otherwise the result's own link.
+function resultLinks(name: string, result: Record<string, unknown>): T.ResourceLink[] {
+  try {
+    if (name === 'find_scholarships') {
+      return (result as unknown as T.Scholarships).scholarships.map((s) => ({ ...s.link, label: s.link.label ?? s.name }))
+    }
+    if (name === 'get_ground_route') {
+      return (result as unknown as T.RouteOptions).routes.map((r) => ({ ...r.link, label: r.link.label ?? r.name }))
+    }
+  } catch {
+    return []
+  }
+  const link = result.link as T.ResourceLink | undefined
+  return link ? [link] : []
+}
+
 // Shown only while the agent is working; the app hides it once the plans arrive.
+// Lookups are grouped by the college they're for, in the order each college first came up.
 export function ActivityFeed({ activity }: { activity: ToolActivity[] }) {
+  const groups: { school: string | null; items: ToolActivity[] }[] = []
+  for (const item of activity) {
+    const group = groups.find((g) => g.school === item.school)
+    if (group) group.items.push(item)
+    else groups.push({ school: item.school, items: [item] })
+  }
   return (
     <section className="activity">
       <h2 className="section-title">Researching your move</h2>
+      {groups.map((group) => (
+        <div key={group.school ?? ''} className="activity-group">
+          <h3 className="activity-school">{group.school ?? 'General'}</h3>
+          <ActivityList items={group.items} />
+        </div>
+      ))}
+      <p className="activity-thinking">Thinking it through…</p>
+    </section>
+  )
+}
+
+function ActivityList({ items }: { items: ToolActivity[] }) {
+  return (
       <ul className="activity-list">
-        {activity.map((item) => {
+        {items.map((item) => {
           const failed = item.result && 'error' in item.result
           const status = !item.result ? 'pending' : failed ? 'failed' : 'done'
           return (
@@ -130,18 +195,17 @@ export function ActivityFeed({ activity }: { activity: ToolActivity[] }) {
               <div>
                 <p className="activity-label">{LABELS[item.name] ?? item.name}</p>
                 {item.result && <p className="activity-summary">{summarize(item.name, item.result)}</p>}
-                {item.result && (
-                  <ExternalLink link={item.result.link as T.ResourceLink | undefined} className="activity-link" />
+                {item.result && !('error' in item.result) && (
+                  <p className="source-note">{item.aiGenerated ? 'AI-generated · not from an official API' : 'From an API or calculated'}</p>
                 )}
+                {item.result &&
+                  resultLinks(item.name, item.result).map((link, i) => (
+                    <ExternalLink key={i} link={link} className="activity-link" />
+                  ))}
               </div>
             </li>
           )
         })}
-        <li className="activity-item activity-item--thinking">
-          <span className="activity-dot" aria-hidden />
-          <p className="activity-label">Thinking it through…</p>
-        </li>
       </ul>
-    </section>
   )
 }
